@@ -1,0 +1,266 @@
+{
+  "projectType": "framework",
+  "projectName": "Nuxt",
+  "projectDescription": "The intuitive Vue framework for building type-safe, performant, and production-grade full-stack web applications.",
+  "theme": "mint",
+  "primaryColor": "#00DC82",
+  "lightColor": "#00DC82",
+  "darkColor": "#00DC82",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/views",
+              "concepts/routing",
+              "concepts/data-fetching",
+              "concepts/state-management",
+              "concepts/server-side-rendering",
+              "concepts/server-engine",
+              "concepts/modules",
+              "concepts/auto-imports",
+              "concepts/typescript"
+            ]
+          },
+          {
+            "group": "Building Your App",
+            "pages": [
+              "guide/assets",
+              "guide/styling",
+              "guide/seo-meta",
+              "guide/transitions",
+              "guide/error-handling",
+              "guide/layers",
+              "guide/testing"
+            ]
+          },
+          {
+            "group": "Directory Structure",
+            "pages": [
+              "directory-structure/overview",
+              "directory-structure/app",
+              "directory-structure/pages",
+              "directory-structure/components",
+              "directory-structure/composables",
+              "directory-structure/server",
+              "directory-structure/public",
+              "directory-structure/layouts",
+              "directory-structure/middleware",
+              "directory-structure/plugins",
+              "directory-structure/modules",
+              "directory-structure/nuxt-config"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/prerendering",
+              "deployment/deployment",
+              "deployment/static-hosting",
+              "deployment/node-server",
+              "deployment/edge-deployment"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/nuxt-lifecycle",
+              "advanced/vuejs-development",
+              "advanced/code-style",
+              "advanced/esm",
+              "advanced/kit"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Components",
+            "pages": [
+              "api/components/nuxt-page",
+              "api/components/nuxt-layout",
+              "api/components/nuxt-link",
+              "api/components/nuxt-loading-indicator",
+              "api/components/nuxt-error-boundary",
+              "api/components/nuxt-island",
+              "api/components/nuxt-img",
+              "api/components/nuxt-picture",
+              "api/components/client-only",
+              "api/components/dev-only",
+              "api/components/teleports"
+            ]
+          },
+          {
+            "group": "Composables",
+            "pages": [
+              "api/composables/use-nuxt-app",
+              "api/composables/use-async-data",
+              "api/composables/use-fetch",
+              "api/composables/use-lazy-async-data",
+              "api/composables/use-lazy-fetch",
+              "api/composables/use-nuxt-data",
+              "api/composables/use-cookie",
+              "api/composables/use-head",
+              "api/composables/use-head-safe",
+              "api/composables/use-error",
+              "api/composables/use-hydration",
+              "api/composables/use-loading-indicator",
+              "api/composables/use-request-event",
+              "api/composables/use-request-headers",
+              "api/composables/use-app-config"
+            ]
+          },
+          {
+            "group": "Utils",
+            "pages": [
+              "api/utils/overview",
+              "api/utils/dollarfetch",
+              "api/utils/abort-navigation",
+              "api/utils/navigate-to",
+              "api/utils/prefetch-components",
+              "api/utils/preload-components",
+              "api/utils/preload-route-components",
+              "api/utils/refresh-nuxt-data",
+              "api/utils/reload-nuxt-app",
+              "api/utils/set-page-layout"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "api/commands/dev",
+              "api/commands/build",
+              "api/commands/generate",
+              "api/commands/preview",
+              "api/commands/init",
+              "api/commands/prepare",
+              "api/commands/typecheck",
+              "api/commands/analyze",
+              "api/commands/cleanup",
+              "api/commands/devtools",
+              "api/commands/upgrade"
+            ]
+          },
+          {
+            "group": "Nuxt Config",
+            "pages": [
+              "api/nuxt-config"
+            ]
+          },
+          {
+            "group": "Kit API",
+            "pages": [
+              "api/kit/modules",
+              "api/kit/programmatic",
+              "api/kit/compatibility",
+              "api/kit/components",
+              "api/kit/context",
+              "api/kit/pages",
+              "api/kit/plugins",
+              "api/kit/templates",
+              "api/kit/nitro",
+              "api/kit/resolving",
+              "api/kit/logging",
+              "api/kit/builder"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Modules",
+        "groups": [
+          {
+            "group": "Building Modules",
+            "pages": [
+              "modules/introduction",
+              "modules/authoring-guide",
+              "modules/module-anatomy",
+              "modules/best-practices",
+              "modules/recipes"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Migration",
+        "groups": [
+          {
+            "group": "Migration Guides",
+            "pages": [
+              "migration/overview",
+              "migration/configuration",
+              "migration/auto-imports",
+              "migration/pages-and-layouts",
+              "migration/runtime-config",
+              "migration/meta",
+              "migration/plugins-and-middleware"
+            ]
+          },
+          {
+            "group": "Bridge",
+            "pages": [
+              "bridge/overview",
+              "bridge/typescript",
+              "bridge/composition-api",
+              "bridge/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Community",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "community/getting-help",
+              "community/reporting-bugs",
+              "community/contribution",
+              "community/framework-contribution"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "community/roadmap",
+              "community/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Server-side rendering (SSR) and static site generation",
+    "File-based routing with automatic code splitting",
+    "Auto-imports for components, composables, and utilities",
+    "Full-stack capabilities with Nitro server engine",
+    "Zero-config TypeScript support",
+    "Extensible module system with 300+ modules",
+    "Hybrid rendering with flexible deployment options",
+    "Built-in data fetching and state management",
+    "SEO and meta tag management",
+    "Hot module replacement in development"
+  ],
+  "publicApiSurface": [
+    "Components: <NuxtPage>, <NuxtLayout>, <NuxtLink>, <NuxtLoadingIndicator>, <NuxtErrorBoundary>, <NuxtIsland>, <ClientOnly>",
+    "Composables: useAsyncData(), useFetch(), useLazyAsyncData(), useLazyFetch(), useNuxtData(), useCookie(), useHead(), useError(), useNuxtApp(), useHydration()",
+    "Utils: navigateTo(), abortNavigation(), prefetchComponents(), preloadComponents(), refreshNuxtData(), reloadNuxtApp(), setPageLayout(), $fetch()",
+    "Commands: nuxt dev, nuxt build, nuxt generate, nuxt preview, nuxt init, nuxt prepare, nuxt typecheck, nuxt analyze, nuxt upgrade",
+    "Config: nuxt.config.ts with app, runtimeConfig, modules, routeRules, nitro, vite options",
+    "Kit API: defineNuxtModule(), addPlugin(), addComponent(), addServerHandler(), createResolver(), useNuxt(), installModule()"
+  ]
+}
