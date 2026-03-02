@@ -1,0 +1,86 @@
+---
+title: 'reloadNuxtApp'
+description: 'Perform a hard reload of the page.'
+---
+
+<Note>
+`reloadNuxtApp` will perform a hard reload of your app, re-requesting a page and its dependencies from the server.
+</Note>
+
+By default, it will also save the current `state` of your app (that is, any state you could access with `useState`).
+
+<Tip>
+You can enable experimental restoration of this state by enabling the `experimental.restoreState` option in your `nuxt.config` file.
+</Tip>
+
+## Type Signature
+
+```ts
+function reloadNuxtApp(options?: ReloadNuxtAppOptions): void
+
+interface ReloadNuxtAppOptions {
+  ttl?: number
+  force?: boolean
+  path?: string
+  persistState?: boolean
+}
+```
+
+## Parameters
+
+<ParamField path="options" type="ReloadNuxtAppOptions" optional>
+  Options object to configure the reload behavior.
+  
+  <Expandable title="options properties">
+    <ParamField path="path" type="string" default="window.location.pathname" optional>
+      The path to reload (defaulting to the current path). If this is different from the current window location it will trigger a navigation and add an entry in the browser history.
+    </ParamField>
+    
+    <ParamField path="ttl" type="number" default="10000" optional>
+      The number of milliseconds in which to ignore future reload requests. If called again within this time period, `reloadNuxtApp` will not reload your app to avoid reload loops.
+    </ParamField>
+    
+    <ParamField path="force" type="boolean" default="false" optional>
+      This option allows bypassing reload loop protection entirely, forcing a reload even if one has occurred within the previously specified TTL.
+    </ParamField>
+    
+    <ParamField path="persistState" type="boolean" default="false" optional>
+      Whether to dump the current Nuxt state to sessionStorage (as `nuxt:reload:state`). By default this will have no effect on reload unless `experimental.restoreState` is also set, or unless you handle restoring the state yourself.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic Reload
+
+```ts
+// Perform a simple reload
+reloadNuxtApp()
+```
+
+### Reload with Custom Path
+
+```ts
+// Reload and navigate to a different path
+reloadNuxtApp({ path: '/dashboard' })
+```
+
+### Force Reload
+
+```ts
+// Force a reload, bypassing the TTL protection
+reloadNuxtApp({ force: true })
+```
+
+### Reload with State Persistence
+
+```ts
+// Reload and persist the current state
+reloadNuxtApp({ persistState: true })
+```
+
+## See Also
+
+- [Experimental Features Guide](/advanced/experimental-features#restorestate)
+- [`refreshNuxtData`](/api/utils/refresh-nuxt-data)

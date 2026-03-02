@@ -1,0 +1,459 @@
+---
+title: Page and Layout Transitions
+description: Apply smooth transitions between pages and layouts using Vue's Transition component or native browser View Transitions.
+---
+
+Nuxt leverages Vue's `<Transition>` component to apply transitions between pages and layouts, providing smooth visual effects when navigating your application.
+
+## Page Transitions
+
+Enable page transitions to apply automatic transitions for all your pages:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
+})
+```
+</CodeGroup>
+
+<Note>
+If you change layouts and pages simultaneously, the page transition won't run. Set a layout transition instead.
+</Note>
+
+Add the corresponding CSS to your `app.vue`:
+
+<CodeGroup>
+```vue app/app.vue
+<template>
+  <NuxtPage />
+</template>
+
+<style>
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.4s;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  filter: blur(1rem);
+}
+</style>
+```
+
+```vue app/pages/index.vue
+<template>
+  <div>
+    <h1>Home page</h1>
+    <NuxtLink to="/about">About page</NuxtLink>
+  </div>
+</template>
+```
+
+```vue app/pages/about.vue
+<template>
+  <div>
+    <h1>About page</h1>
+    <NuxtLink to="/">Home page</NuxtLink>
+  </div>
+</template>
+```
+</CodeGroup>
+
+This creates a fade and blur effect when navigating between pages.
+
+### Custom Page Transitions
+
+Set different transitions for specific pages using `definePageMeta`:
+
+<CodeGroup>
+```vue pages/about.vue
+<script setup lang="ts">
+definePageMeta({
+  pageTransition: {
+    name: 'rotate',
+  },
+})
+</script>
+```
+
+```vue app/app.vue
+<template>
+  <NuxtPage />
+</template>
+
+<style>
+.rotate-enter-active,
+.rotate-leave-active {
+  transition: all 0.4s;
+}
+.rotate-enter-from,
+.rotate-leave-to {
+  opacity: 0;
+  transform: rotate3d(1, 1, 1, 15deg);
+}
+</style>
+```
+</CodeGroup>
+
+Navigating to the about page now applies a 3D rotation effect.
+
+## Layout Transitions
+
+Enable layout transitions to apply automatic transitions for all your layouts:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    layoutTransition: { name: 'layout', mode: 'out-in' },
+  },
+})
+```
+</CodeGroup>
+
+Add the transition styles to your `app.vue`:
+
+<CodeGroup>
+```vue app/app.vue
+<template>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+
+<style>
+.layout-enter-active,
+.layout-leave-active {
+  transition: all 0.4s;
+}
+.layout-enter-from,
+.layout-leave-to {
+  filter: grayscale(1);
+}
+</style>
+```
+</CodeGroup>
+
+### Custom Layout Transitions
+
+Apply custom layout transitions using `definePageMeta`:
+
+<CodeGroup>
+```vue pages/about.vue
+<script setup lang="ts">
+definePageMeta({
+  layout: 'orange',
+  layoutTransition: {
+    name: 'slide-in',
+  },
+})
+</script>
+```
+</CodeGroup>
+
+## Global Settings
+
+Customize default transition names globally using `nuxt.config`. Both `pageTransition` and `layoutTransition` accept `TransitionProps` as JSON serializable values:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    pageTransition: {
+      name: 'fade',
+      mode: 'out-in',
+    },
+    layoutTransition: {
+      name: 'slide',
+      mode: 'out-in',
+    },
+  },
+})
+```
+</CodeGroup>
+
+<Warning>
+If you change the `name` property, you must rename the CSS classes accordingly.
+</Warning>
+
+Override global transitions using `definePageMeta` for individual pages:
+
+<CodeGroup>
+```vue pages/some-page.vue
+<script setup lang="ts">
+definePageMeta({
+  pageTransition: {
+    name: 'bounce',
+    mode: 'out-in',
+  },
+})
+</script>
+```
+</CodeGroup>
+
+## Disable Transitions
+
+Disable transitions for specific routes:
+
+<CodeGroup>
+```vue pages/some-page.vue
+<script setup lang="ts">
+definePageMeta({
+  pageTransition: false,
+  layoutTransition: false,
+})
+</script>
+```
+</CodeGroup>
+
+Or disable globally in `nuxt.config`:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    pageTransition: false,
+    layoutTransition: false,
+  },
+})
+```
+</CodeGroup>
+
+## JavaScript Hooks
+
+Create highly dynamic transitions using JavaScript hooks, perfect for animation libraries like [GSAP](https://gsap.com):
+
+<CodeGroup>
+```vue pages/some-page.vue
+<script setup lang="ts">
+definePageMeta({
+  pageTransition: {
+    name: 'custom-flip',
+    mode: 'out-in',
+    onBeforeEnter: (el) => {
+      console.log('Before enter...')
+    },
+    onEnter: (el, done) => {},
+    onAfterEnter: (el) => {},
+  },
+})
+</script>
+```
+</CodeGroup>
+
+<Tip>
+Learn more about [JavaScript hooks](https://vuejs.org/guide/built-ins/transition#javascript-hooks) in the Vue Transition component documentation.
+</Tip>
+
+## Dynamic Transitions
+
+Apply conditional transitions using inline middleware to assign different transition names:
+
+<CodeGroup>
+```vue pages/[id].vue
+<script setup lang="ts">
+definePageMeta({
+  pageTransition: {
+    name: 'slide-right',
+    mode: 'out-in',
+  },
+  middleware (to, from) {
+    if (to.meta.pageTransition && typeof to.meta.pageTransition !== 'boolean') {
+      to.meta.pageTransition.name = +to.params.id! > +from.params.id! ? 'slide-left' : 'slide-right'
+    }
+  },
+})
+</script>
+
+<template>
+  <h1>#{{ $route.params.id }}</h1>
+</template>
+
+<style>
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.2s;
+}
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translate(50px, 0);
+}
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translate(-50px, 0);
+}
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translate(-50px, 0);
+}
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translate(50px, 0);
+}
+</style>
+```
+</CodeGroup>
+
+This applies `slide-left` when going to a higher ID and `slide-right` for the previous ID.
+
+## Transition with NuxtPage
+
+Configure transitions globally using the `transition` prop on `<NuxtPage />`:
+
+<CodeGroup>
+```vue app/app.vue
+<template>
+  <div>
+    <NuxtLayout>
+      <NuxtPage
+        :transition="{
+          name: 'bounce',
+          mode: 'out-in',
+        }"
+      />
+    </NuxtLayout>
+  </div>
+</template>
+```
+</CodeGroup>
+
+<Note>
+This page transition cannot be overridden with `definePageMeta` on individual pages.
+</Note>
+
+## View Transitions API (Experimental)
+
+Nuxt ships with experimental support for the native [View Transitions API](https://developer.chrome.com/docs/web-platform/view-transitions), enabling native browser transitions between unrelated elements on different pages.
+
+### Enable View Transitions
+
+Enable the feature in your configuration:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  experimental: {
+    viewTransition: true,
+  },
+})
+```
+</CodeGroup>
+
+Possible values:
+- `false`: Disabled
+- `true`: Enabled, respects `prefers-reduced-motion`
+- `'always'`: Always enabled, ignores user preference
+
+### Configure Per Page
+
+Control view transitions per page:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    viewTransition: false, // Disable globally
+  },
+})
+```
+
+```vue pages/about.vue
+<script setup lang="ts">
+definePageMeta({
+  viewTransition: false, // Opt-out for this page
+})
+</script>
+```
+</CodeGroup>
+
+### View Transition Types
+
+Use transition types to apply different CSS animations based on navigation type:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    viewTransition: {
+      enabled: true,
+      types: ['slide'],
+    },
+  },
+})
+```
+
+```vue pages/[id].vue
+<script setup lang="ts">
+definePageMeta({
+  viewTransition: {
+    enabled: true,
+    toTypes: (to, from) => {
+      return Number(to.params.id) > Number(from.params.id)
+        ? ['slide-left']
+        : ['slide-right']
+    },
+  },
+})
+</script>
+```
+</CodeGroup>
+
+Target these types in your CSS:
+
+<CodeGroup>
+```css
+/* Slide left animation */
+html:active-view-transition-type(slide-left) {
+  &::view-transition-old(root) {
+    animation: slide-out-left 0.3s ease-in-out;
+  }
+  &::view-transition-new(root) {
+    animation: slide-in-right 0.3s ease-in-out;
+  }
+}
+
+/* Slide right animation */
+html:active-view-transition-type(slide-right) {
+  &::view-transition-old(root) {
+    animation: slide-out-right 0.3s ease-in-out;
+  }
+  &::view-transition-new(root) {
+    animation: slide-in-left 0.3s ease-in-out;
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+Function values for types only work in `definePageMeta`, not in `nuxt.config.ts`.
+</Note>
+
+### Disable Vue Transitions with View Transitions
+
+If using View Transitions API, disable Vue transitions to avoid conflicts:
+
+<CodeGroup>
+```ts middleware/disable-vue-transitions.global.ts
+export default defineNuxtRouteMiddleware((to) => {
+  if (import.meta.server || !document.startViewTransition) {
+    return
+  }
+
+  // Disable built-in Vue transitions
+  to.meta.pageTransition = false
+  to.meta.layoutTransition = false
+})
+```
+</CodeGroup>
+
+### Known Issues
+
+<Warning>
+If you perform data fetching within page setup functions, consider waiting to adopt this feature. View Transitions freeze DOM updates during execution. We're working on restricting transitions to the final moments before Suspense resolves.
+</Warning>

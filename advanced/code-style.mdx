@@ -1,0 +1,26 @@
+---
+title: Code Style Guide
+description: Nuxt supports ESLint out of the box for maintaining consistent code style across your application.
+---
+
+## ESLint
+
+The recommended approach for Nuxt is to enable ESLint support using the [`@nuxt/eslint`](https://eslint.nuxt.com/packages/module) module, which will set up project-aware ESLint configuration for you.
+
+<Info>
+  The module is designed for the [new ESLint flat config format](https://eslint.org/docs/latest/use/configure/configuration-files) which is the [default format since ESLint v9](https://eslint.org/blog/2024/04/eslint-v9.0.0-released/). If you are using the legacy `.eslintrc` config, you will need to [configure manually with `@nuxt/eslint-config`](https://eslint.nuxt.com/packages/config#customizing-the-config). We highly recommend you to migrate over the flat config to be future-proof.
+</Info>
+
+## Quick Setup
+
+You can quickly add ESLint to your Nuxt project with a single command:
+
+```bash
+npx nuxt module add eslint
+```
+
+Once you start your Nuxt app, an `eslint.config.mjs` file will be generated under your project root. You can customize it as needed.
+
+<Card title="Nuxt ESLint Documentation" icon="link" href="https://eslint.nuxt.com/packages/module">
+  Learn more about the module and customizations in Nuxt ESLint's documentation.
+</Card>

@@ -1,0 +1,458 @@
+---
+title: Module Recipes
+description: Learn how to inject plugins, components, composables and server routes from your module.
+---
+
+Here are some common patterns used by module authors to add functionality to Nuxt applications.
+
+## Modify Nuxt Configuration
+
+Nuxt configuration can be read and altered by modules. Here's an example of a module enabling an experimental feature.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    // We create the `experimental` object if it doesn't exist yet
+    nuxt.options.experimental ||= {}
+    nuxt.options.experimental.componentIslands = true
+  },
+})
+```
+
+When you need to handle more complex configuration alterations, you should consider using [defu](https://github.com/unjs/defu).
+
+## Expose Options to Runtime
+
+Because modules aren't part of the application runtime, their options aren't either. However, in many cases, you might need access to some of these module options within your runtime code. We recommend exposing the needed config using Nuxt's `runtimeConfig`.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+import { defu } from 'defu'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    nuxt.options.runtimeConfig.public.myModule = defu(
+      nuxt.options.runtimeConfig.public.myModule,
+      {
+        foo: options.foo,
+      }
+    )
+  },
+})
+```
+
+Note that we use `defu` to extend the public runtime configuration the user provides instead of overwriting it.
+
+You can then access your module options in a plugin, component, the application like any other runtime configuration:
+
+```ts
+import { useRuntimeConfig } from '@nuxt/kit'
+
+const options = useRuntimeConfig().public.myModule
+```
+
+<Warning>
+Be careful not to expose any sensitive module configuration on the public runtime config, such as private API keys, as they will end up in the public bundle.
+</Warning>
+
+## Add Plugins
+
+Plugins are a common way for a module to add runtime logic. You can use the `addPlugin` utility to register them from your module.
+
+```ts
+import { addPlugin, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    // Create resolver to resolve relative paths
+    const resolver = createResolver(import.meta.url)
+
+    addPlugin(resolver.resolve('./runtime/plugin'))
+  },
+})
+```
+
+## Add Components
+
+If your module should provide Vue components, you can use the `addComponent` utility to add them as auto-imports for Nuxt to resolve.
+
+```ts
+import { addComponent, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    // From the runtime directory
+    addComponent({
+      name: 'MySuperComponent', // name of the component to be used in vue templates
+      export: 'MySuperComponent', // (optional) if the component is a named (rather than default) export
+      filePath: resolver.resolve('runtime/app/components/MySuperComponent.vue'),
+    })
+
+    // From a library
+    addComponent({
+      name: 'MyAwesomeComponent',
+      export: 'MyAwesomeComponent',
+      filePath: '@vue/awesome-components',
+    })
+  },
+})
+```
+
+Alternatively, you can add an entire directory by using `addComponentsDir`.
+
+```ts
+import { addComponentsDir, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addComponentsDir({
+      path: resolver.resolve('runtime/app/components'),
+    })
+  },
+})
+```
+
+<Tip>
+It is highly recommended to prefix your exports to avoid conflicts with user code or other modules. See [Prefix Your Exports](/modules/best-practices#prefix-your-exports) for more details.
+</Tip>
+
+<Note>
+Note that all components, pages, composables and other files that would be normally placed in your `app/` folder need to be in `runtime/app/`. This will mean they can be type checked properly.
+</Note>
+
+## Add Composables
+
+If your module should provide composables, you can use the `addImports` utility to add them as auto-imports for Nuxt to resolve.
+
+```ts
+import { addImports, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addImports({
+      name: 'useComposable', // name of the composable to be used
+      as: 'useMyComposable', // optional alias
+      from: resolver.resolve('runtime/app/composables/useComposable'),
+    })
+  },
+})
+```
+
+Multiple entries can be passed as an array:
+
+```ts
+import { addImports, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addImports([
+      {
+        name: 'useFirstComposable',
+        from: resolver.resolve('runtime/composables/useFirstComposable'),
+      },
+      {
+        name: 'useSecondComposable',
+        from: resolver.resolve('runtime/composables/useSecondComposable'),
+      },
+    ])
+  },
+})
+```
+
+Alternatively, you can add an entire directory by using `addImportsDir`.
+
+```ts
+import { addImportsDir, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addImportsDir(resolver.resolve('runtime/composables'))
+  },
+})
+```
+
+### Add Keyed Functions
+
+Sometimes, you may need to maintain state consistency between the server and the client. Examples include Nuxt's built-in `useState` or `useAsyncData` composables.
+
+When a function is registered, Nuxt's compiler automatically injects a unique key as an additional argument if the function is called with fewer than the specified number of arguments. This key remains stable between server-side rendering and client hydration.
+
+<Tip>
+The injected key is a hash derived from the file path and call location.
+</Tip>
+
+Use the `keyedComposables` option to register your function:
+
+```ts
+import { createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    nuxt.options.optimization.keyedComposables.push({
+      name: 'useMyState',
+      source: resolver.resolve('./runtime/composables/state'),
+      argumentLength: 2,
+    })
+  },
+})
+```
+
+The `keyedComposables` configuration accepts an array of objects with the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | `string` | The function name. Use `'default'` for default exports. |
+| `source` | `string` | Resolved path to the file where the function is defined. |
+| `argumentLength` | `number` | Maximum number of arguments the function accepts. |
+
+For example, with `argumentLength: 2`:
+
+```ts
+useMyState() // useMyState('$HJiaryoL2y')
+useMyState('myKey') // useMyState('myKey', '$HJiaryoL2y')
+useMyState('a', 'b') // not transformed (already has 2 arguments)
+```
+
+## Add Server Routes
+
+You can add server routes to your module using the `addServerHandler` utility.
+
+```ts
+import { addServerHandler, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addServerHandler({
+      route: '/api/_my-module/hello',
+      handler: resolver.resolve('./runtime/server/api/hello/index.get'),
+    })
+  },
+})
+```
+
+You can also add a dynamic server route:
+
+```ts
+import { addServerHandler, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    addServerHandler({
+      route: '/api/_my-module/hello/:name',
+      handler: resolver.resolve('./runtime/server/api/hello/[name].get'),
+    })
+
+    // Or using a catch all route
+    addServerHandler({
+      route: '/api/_my-module/files/**:path',
+      handler: resolver.resolve('./runtime/server/api/files/[...path].get'),
+    })
+  },
+})
+```
+
+<Tip>
+It is highly recommended to prefix your server routes to avoid conflicts with user-defined routes. Common paths like `/api/auth`, `/api/login`, or `/api/user` may already be used by the application.
+</Tip>
+
+## Add Other Assets
+
+If your module should provide other kinds of assets, they can also be injected. Here's a simple example module injecting a stylesheet through Nuxt's `css` array.
+
+```ts
+import { createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    nuxt.options.css.push(resolver.resolve('./runtime/style.css'))
+  },
+})
+```
+
+And a more advanced one, exposing a folder of assets through Nitro's `publicAssets` option:
+
+```ts
+import { createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    const resolver = createResolver(import.meta.url)
+
+    nuxt.hook('nitro:config', (nitroConfig) => {
+      nitroConfig.publicAssets ||= []
+      nitroConfig.publicAssets.push({
+        dir: resolver.resolve('./runtime/public'),
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+      })
+    })
+  },
+})
+```
+
+## Use Other Modules
+
+If your module depends on other modules, you can specify them using the `moduleDependencies` option. This provides a more robust way to handle module dependencies with version constraints and configuration merging:
+
+```ts
+import { createResolver, defineNuxtModule } from '@nuxt/kit'
+
+const resolver = createResolver(import.meta.url)
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-module',
+  },
+  moduleDependencies: {
+    '@nuxtjs/tailwindcss': {
+      // You can specify a version constraint for the module
+      version: '>=6',
+      // Any configuration that should override `nuxt.options`
+      overrides: {
+        exposeConfig: true,
+      },
+      // Any configuration that should be set
+      defaults: {
+        config: {
+          darkMode: 'class',
+          content: {
+            files: [
+              resolver.resolve('./runtime/components/**/*.{vue,mjs,ts}'),
+              resolver.resolve('./runtime/*.{mjs,js,ts}'),
+            ],
+          },
+        },
+      },
+    },
+  },
+  setup (options, nuxt) {
+    // We can inject our CSS file which includes Tailwind's directives
+    nuxt.options.css.push(resolver.resolve('./runtime/assets/styles.css'))
+  },
+})
+```
+
+## Use Lifecycle Hooks
+
+Lifecycle hooks allow you to expand almost every aspect of Nuxt. Modules can hook to them programmatically or through the `hooks` map in their definition.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  // Hook to the `app:error` hook through the `hooks` map
+  hooks: {
+    'app:error': (err) => {
+      console.info(`This error happened: ${err}`)
+    },
+  },
+  setup (options, nuxt) {
+    // Programmatically hook to the `pages:extend` hook
+    nuxt.hook('pages:extend', (pages) => {
+      console.info(`Discovered ${pages.length} pages`)
+    })
+  },
+})
+```
+
+### Module Cleanup
+
+If your module opens, handles, or starts a watcher, you should close it when the Nuxt lifecycle is done. The `close` hook is available for this.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    nuxt.hook('close', async (nuxt) => {
+      // Your custom cleanup code here
+    })
+  },
+})
+```
+
+## Add Virtual Files
+
+If you need to add a virtual file that can be imported into the user's app, you can use the `addTemplate` utility.
+
+```ts
+import { addTemplate, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    // File can be imported from '#build/my-module-feature.mjs'
+    addTemplate({
+      filename: 'my-module-feature.mjs',
+      getContents: () => 'export const myModuleFeature = () => "hello world !"',
+    })
+  },
+})
+```
+
+For the server, you should use the `addServerTemplate` utility instead.
+
+```ts
+import { addServerTemplate, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    // File can be imported in server code from 'my-server-module.mjs'
+    addServerTemplate({
+      filename: 'my-server-module.mjs',
+      getContents: () => 'export const myServerModule = () => "hello world !"',
+    })
+  },
+})
+```
+
+## Add Type Declarations
+
+You might also want to add a type declaration to the user's project (for example, to augment a Nuxt interface or provide a global type of your own). For this, Nuxt provides the `addTypeTemplate` utility that both writes a template to the disk and adds a reference to it in the generated `nuxt.d.ts` file.
+
+```ts
+import { addTypeTemplate, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup (options, nuxt) {
+    addTypeTemplate({
+      filename: 'types/my-module.d.ts',
+      getContents: () => `// Generated by my-module
+        interface MyModuleNitroRules {
+          myModule?: { foo: 'bar' }
+        }
+        declare module 'nitropack/types' {
+          interface NitroRouteRules extends MyModuleNitroRules {}
+          interface NitroRouteConfig extends MyModuleNitroRules {}
+        }
+        export {}`,
+    })
+  },
+})
+```
+
+## Next Steps
+
+Now that you've learned the common module recipes, explore best practices for building production-ready modules.
+
+<Card title="Best Practices" icon="star" href="/modules/best-practices">
+  Learn how to build performant and maintainable modules
+</Card>

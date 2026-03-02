@@ -1,0 +1,472 @@
+---
+title: Testing Guide
+description: Learn how to test your Nuxt application with unit tests, component tests, and end-to-end testing using @nuxt/test-utils.
+---
+
+Nuxt offers first-class testing support through `@nuxt/test-utils`, providing utilities and configuration for unit testing and end-to-end testing of your Nuxt application.
+
+<Tip>
+If you're a module author, check the [Module Author's guide](/guide/testing) for module-specific testing information.
+</Tip>
+
+## Installation
+
+Install `@nuxt/test-utils` with your preferred test runner and environment:
+
+<CodeGroup>
+```bash npm
+npm i --save-dev @nuxt/test-utils vitest @vue/test-utils happy-dom playwright-core
+```
+
+```bash pnpm
+pnpm add -D @nuxt/test-utils vitest @vue/test-utils happy-dom playwright-core
+```
+
+```bash yarn
+yarn add --dev @nuxt/test-utils vitest @vue/test-utils happy-dom playwright-core
+```
+
+```bash bun
+bun add --dev @nuxt/test-utils vitest @vue/test-utils happy-dom playwright-core
+```
+</CodeGroup>
+
+### Optional Dependencies
+
+`@nuxt/test-utils` ships with optional peer dependencies:
+
+- **DOM environment**: Choose `happy-dom` or `jsdom`
+- **Test runners**: Choose `vitest`, `cucumber`, `jest`, or `playwright`
+- **Browser testing**: `playwright-core` (only if not using `@playwright/test`)
+
+## Unit Testing
+
+Nuxt provides an environment for unit testing code that needs a Nuxt runtime environment. Currently supports **Vitest only**.
+
+### Setup
+
+#### 1. Add the Nuxt Test Utils Module (Optional)
+
+Add `@nuxt/test-utils/module` to your `nuxt.config` for Vitest integration in Nuxt DevTools:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  modules: [
+    '@nuxt/test-utils/module',
+  ],
+})
+```
+</CodeGroup>
+
+#### 2. Create Vitest Configuration
+
+Create a `vitest.config.ts` with project-based setup:
+
+<CodeGroup>
+```ts vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { defineVitestProject } from '@nuxt/test-utils/config'
+
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          include: ['test/unit/*.{test,spec}.ts'],
+          environment: 'node',
+        },
+      },
+      {
+        test: {
+          name: 'e2e',
+          include: ['test/e2e/*.{test,spec}.ts'],
+          environment: 'node',
+        },
+      },
+      await defineVitestProject({
+        test: {
+          name: 'nuxt',
+          include: ['test/nuxt/*.{test,spec}.ts'],
+          environment: 'nuxt',
+        },
+      }),
+    ],
+  },
+})
+```
+</CodeGroup>
+
+<Tip>
+When importing `@nuxt/test-utils` in your Vitest config, ensure you have `"type": "module"` in your `package.json` or rename your config file to `vitest.config.m{ts,js}`.
+</Tip>
+
+<Tip>
+Set environment variables for testing using the `.env.test` file.
+</Tip>
+
+### Organizing Your Tests
+
+With the project-based setup, organize tests as follows:
+
+<CodeGroup>
+```bash Directory structure
+test/
+├── e2e/
+│   └── ssr.test.ts
+├── nuxt/
+│   ├── components.test.ts
+│   └── composables.test.ts
+├── unit/
+│   └── utils.test.ts
+```
+</CodeGroup>
+
+- **Unit tests** (`test/unit/`): Run in Node environment for speed
+- **Nuxt tests** (`test/nuxt/`): Run within Nuxt runtime environment
+- **E2E tests** (`test/e2e/`): Run against a built Nuxt application
+
+### Alternative: Simple Setup
+
+For a simpler setup where all tests run in the Nuxt environment:
+
+<CodeGroup>
+```ts vitest.config.ts
+import { defineVitestConfig } from '@nuxt/test-utils/config'
+
+export default defineVitestConfig({
+  test: {
+    environment: 'nuxt',
+  },
+})
+```
+</CodeGroup>
+
+<Warning>
+This approach creates a hybrid environment where Nuxt Vite plugins run but the Nuxt entry and `nuxtApp` aren't initialized, which can lead to hard-to-debug errors.
+</Warning>
+
+### Running Tests
+
+Run different test suites with the project setup:
+
+<CodeGroup>
+```bash Run all tests
+npx vitest
+```
+
+```bash Run only unit tests
+npx vitest --project unit
+```
+
+```bash Run only Nuxt tests
+npx vitest --project nuxt
+```
+
+```bash Watch mode
+npx vitest --watch
+```
+</CodeGroup>
+
+<Warning>
+Tests run in a `happy-dom` or `jsdom` environment. A global Nuxt app initializes before tests run (including running plugins and code in your `app.vue`). Take care not to mutate global state in your tests, or reset it afterwards.
+</Warning>
+
+## Testing Helpers
+
+### mountSuspended
+
+Mount any Vue component within the Nuxt environment, allowing async setup and access to Nuxt plugins:
+
+<CodeGroup>
+```ts test/nuxt/components.test.ts
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { SomeComponent } from '#components'
+
+it('can mount some component', async () => {
+  const component = await mountSuspended(SomeComponent)
+  expect(component.text()).toMatchInlineSnapshot(
+    '"This is an auto-imported component"',
+  )
+})
+```
+</CodeGroup>
+
+`mountSuspended` wraps `mount` from `@vue/test-utils`. Check the [Vue Test Utils documentation](https://test-utils.vuejs.org/guide/) for available options.
+
+### renderSuspended
+
+Render any Vue component within the Nuxt environment using `@testing-library/vue`:
+
+<CodeGroup>
+```ts test/nuxt/components.test.ts
+import { renderSuspended } from '@nuxt/test-utils/runtime'
+import { SomeComponent } from '#components'
+import { screen } from '@testing-library/vue'
+
+it('can render some component', async () => {
+  await renderSuspended(SomeComponent)
+  expect(screen.getByText('This is an auto-imported component')).toBeDefined()
+})
+```
+</CodeGroup>
+
+<Note>
+Install `@testing-library/vue` and enable testing globals in your Vitest config to use `renderSuspended`.
+</Note>
+
+### mockNuxtImport
+
+Mock Nuxt's auto import functionality:
+
+<CodeGroup>
+```ts test/nuxt/composables.test.ts
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+mockNuxtImport('useStorage', () => {
+  return () => {
+    return { value: 'mocked storage' }
+  }
+})
+
+// your tests here
+```
+</CodeGroup>
+
+<Note>
+`mockNuxtImport` can only be used once per mocked import per test file. It's a macro that transforms to `vi.mock`.
+</Note>
+
+For different implementations between tests, use `vi.hoisted`:
+
+<CodeGroup>
+```ts
+import { vi } from 'vitest'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+const { useStorageMock } = vi.hoisted(() => {
+  return {
+    useStorageMock: vi.fn(() => {
+      return { value: 'mocked storage' }
+    }),
+  }
+})
+
+mockNuxtImport('useStorage', () => {
+  return useStorageMock
+})
+
+// Then, inside a test
+useStorageMock.mockImplementation(() => {
+  return { value: 'something else' }
+})
+```
+</CodeGroup>
+
+### mockComponent
+
+Mock Nuxt components:
+
+<CodeGroup>
+```ts
+import { mockComponent } from '@nuxt/test-utils/runtime'
+
+mockComponent('MyComponent', {
+  props: {
+    value: String,
+  },
+  setup (props) {
+    // ...
+  },
+})
+
+// Or use a factory function
+mockComponent('MyComponent', () => import('./MockComponent.vue'))
+```
+</CodeGroup>
+
+### registerEndpoint
+
+Create Nitro endpoints that return mocked data:
+
+<CodeGroup>
+```ts
+import { registerEndpoint } from '@nuxt/test-utils/runtime'
+
+registerEndpoint('/test/', () => ({
+  test: 'test-field',
+}))
+
+// POST method
+registerEndpoint('/test/', {
+  method: 'POST',
+  handler: () => ({ test: 'test-field' }),
+})
+```
+</CodeGroup>
+
+## End-to-End Testing
+
+Nuxt supports Vitest, Jest, Cucumber, and Playwright as end-to-end test runners.
+
+### Setup
+
+In each `describe` block, set up the test context:
+
+<CodeGroup>
+```ts test/e2e/my-test.spec.ts
+import { describe, test } from 'vitest'
+import { $fetch, setup } from '@nuxt/test-utils/e2e'
+
+describe('My test', async () => {
+  await setup({
+    // test context options
+  })
+
+  test('my test', () => {
+    // ...
+  })
+})
+```
+</CodeGroup>
+
+### Setup Options
+
+#### Nuxt Config
+- `rootDir`: Path to Nuxt app directory (default: `'.'`)
+- `configFile`: Configuration file name (default: `'nuxt.config'`)
+
+#### Timings
+- `setupTimeout`: Time for setup to complete (default: `120000`ms, `240000`ms on Windows)
+- `teardownTimeout`: Time for teardown (default: `30000`ms)
+
+#### Features
+- `build`: Run separate build step (default: `true`)
+- `server`: Launch server for requests (default: `true`)
+- `port`: Test server port (default: `undefined`)
+- `host`: URL for testing against deployed app (default: `undefined`)
+- `browser`: Launch browser for testing (default: `false`)
+- `browserOptions`: Playwright browser options
+- `runner`: Test runner (default: `'vitest'`)
+
+### Testing Against a Target Host
+
+Test against a deployed or running application:
+
+<CodeGroup>
+```ts test/e2e/login.test.ts
+import { createPage, setup } from '@nuxt/test-utils/e2e'
+import { describe, expect, it } from 'vitest'
+
+describe('login page', async () => {
+  await setup({
+    host: 'http://localhost:8787',
+  })
+
+  it('displays the email and password fields', async () => {
+    const page = await createPage('/login')
+    expect(await page.getByTestId('email').isVisible()).toBe(true)
+    expect(await page.getByTestId('password').isVisible()).toBe(true)
+  })
+})
+```
+</CodeGroup>
+
+### E2E Testing APIs
+
+#### $fetch(url)
+
+Get the HTML of a server-rendered page:
+
+<CodeGroup>
+```ts
+import { $fetch } from '@nuxt/test-utils/e2e'
+
+const html = await $fetch('/')
+```
+</CodeGroup>
+
+#### fetch(url)
+
+Get the response of a server-rendered page:
+
+<CodeGroup>
+```ts
+import { fetch } from '@nuxt/test-utils/e2e'
+
+const res = await fetch('/')
+const { body, headers } = res
+```
+</CodeGroup>
+
+#### url(path)
+
+Get the full URL for a given page:
+
+<CodeGroup>
+```ts
+import { url } from '@nuxt/test-utils/e2e'
+
+const pageUrl = url('/page')
+// 'http://localhost:6840/page'
+```
+</CodeGroup>
+
+### Browser Testing
+
+#### createPage(url)
+
+Create a configured Playwright browser instance:
+
+<CodeGroup>
+```ts
+import { createPage } from '@nuxt/test-utils/e2e'
+
+const page = await createPage('/page')
+// Access all Playwright APIs from the `page` variable
+```
+</CodeGroup>
+
+### Playwright Test Runner
+
+Use Nuxt with the Playwright test runner:
+
+<CodeGroup>
+```bash Install
+npm i --save-dev @playwright/test @nuxt/test-utils
+```
+
+```ts playwright.config.ts
+import { fileURLToPath } from 'node:url'
+import { defineConfig, devices } from '@playwright/test'
+import type { ConfigOptions } from '@nuxt/test-utils/playwright'
+
+export default defineConfig<ConfigOptions>({
+  use: {
+    nuxt: {
+      rootDir: fileURLToPath(new URL('.', import.meta.url)),
+    },
+  },
+})
+```
+
+```ts tests/example.test.ts
+import { expect, test } from '@nuxt/test-utils/playwright'
+
+test('test', async ({ page, goto }) => {
+  await goto('/', { waitUntil: 'hydration' })
+  await expect(page.getByRole('heading')).toHaveText('Welcome to Playwright!')
+})
+```
+</CodeGroup>
+
+## Best Practices
+
+1. **Separate test environments**: Keep unit tests, Nuxt tests, and E2E tests in separate directories
+2. **Use appropriate helpers**: Choose `mountSuspended` for components, `mockNuxtImport` for composables
+3. **Mock external dependencies**: Use `registerEndpoint` for API mocking
+4. **Test user flows**: Use E2E tests for critical user journeys
+5. **Keep tests isolated**: Avoid mutating global state; reset after each test
+6. **Use TypeScript**: Leverage type safety in your tests
+7. **Run tests in CI**: Automate testing in your deployment pipeline

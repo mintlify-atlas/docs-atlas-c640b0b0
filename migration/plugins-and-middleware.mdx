@@ -1,0 +1,280 @@
+---
+title: Plugins and Middleware Migration
+description: Learn how to migrate your Nuxt 2 plugins and middleware to Nuxt 3's new format.
+---
+
+## Plugins
+
+Plugins now have a different format, and take only one argument (`nuxtApp`).
+
+<CodeGroup>
+```ts Nuxt 2
+export default (ctx, inject) => {
+  inject('injected', () => 'my injected function')
+}
+```
+
+```ts Nuxt 3
+export default defineNuxtPlugin((nuxtApp) => {
+  // now available on `nuxtApp.$injected`
+  nuxtApp.provide('injected', () => 'my injected function')
+
+  // You can alternatively use this format, which comes with automatic type support
+  return {
+    provide: {
+      injected: () => 'my injected function',
+    },
+  }
+})
+```
+</CodeGroup>
+
+### Plugin Migration Steps
+
+1. **Migrate your plugins to use the `defineNuxtPlugin` helper function**
+2. **Remove any entries in your `nuxt.config` plugins array** that are located in your `app/plugins/` folder. All files in this directory at the top level (and any index files in any subdirectories) will be automatically registered.
+3. **Instead of setting `mode` to `client` or `server`**, you can indicate this in the file name. For example, `~/plugins/my-plugin.client.ts` will only be loaded on client-side.
+
+### Plugin Context
+
+The `nuxtApp` object provides:
+
+- `vueApp` - The Vue app instance
+- `provide()` - Provide values to your app
+- `hook()` - Hook into Nuxt lifecycle
+- `$router` - Vue Router instance
+- `$route` - Current route
+- `ssrContext` - Server-side rendering context (server-only)
+- `payload` - Data payload from server to client
+
+### Example: Vue Plugin
+
+<CodeGroup>
+```ts Nuxt 2
+import Vue from 'vue'
+import VueGtag from 'vue-gtag'
+
+export default ({ app }) => {
+  Vue.use(VueGtag, {
+    config: { id: 'GA_MEASUREMENT_ID' }
+  }, app.router)
+}
+```
+
+```ts Nuxt 3
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.use(VueGtag, {
+    config: { id: 'GA_MEASUREMENT_ID' }
+  })
+})
+```
+</CodeGroup>
+
+### Example: Providing a Helper
+
+<CodeGroup>
+```ts Nuxt 2
+export default (context, inject) => {
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat('en-US').format(date)
+  }
+  
+  inject('formatDate', formatDate)
+}
+```
+
+```ts Nuxt 3
+export default defineNuxtPlugin(() => {
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US').format(date)
+  }
+  
+  return {
+    provide: {
+      formatDate
+    }
+  }
+})
+```
+</CodeGroup>
+
+Usage in components:
+
+```vue
+<script setup>
+const { $formatDate } = useNuxtApp()
+
+const formattedDate = $formatDate(new Date())
+</script>
+```
+
+### Plugin Naming Convention
+
+- `*.client.ts` - Client-side only
+- `*.server.ts` - Server-side only
+- `*.ts` - Both client and server
+
+Example:
+```
+plugins/
+  analytics.client.ts  # Only runs on client
+  api.server.ts        # Only runs on server
+  vue-plugins.ts       # Runs on both
+```
+
+## Route Middleware
+
+Route middleware has a different format.
+
+<CodeGroup>
+```js Nuxt 2
+export default function ({ store, redirect }) {
+  // If the user is not authenticated
+  if (!store.state.authenticated) {
+    return redirect('/login')
+  }
+}
+```
+
+```ts Nuxt 3
+export default defineNuxtRouteMiddleware((to, from) => {
+  const auth = useState('auth')
+  if (!auth.value.authenticated) {
+    return navigateTo('/login')
+  }
+})
+```
+</CodeGroup>
+
+Much like Nuxt 2, route middleware placed in your `~/middleware` folder is automatically registered. You can then specify it by name in a component. However, this is done with `definePageMeta` rather than as a component option.
+
+### Middleware Migration Steps
+
+1. **Migrate your route middleware to use the `defineNuxtRouteMiddleware` helper function**
+2. **Any global middleware** (such as in your `nuxt.config`) can be placed in your `~/middleware` folder with a `.global` extension, for example `~/middleware/auth.global.ts`
+
+### Middleware Types
+
+#### Named Middleware
+
+Place middleware in `~/middleware/` and reference it by name:
+
+```ts middleware/auth.ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  const auth = useState('auth')
+  if (!auth.value.isAuthenticated) {
+    return navigateTo('/login')
+  }
+})
+```
+
+Use in pages:
+
+```vue
+<script setup>
+definePageMeta({
+  middleware: 'auth'
+})
+</script>
+```
+
+#### Global Middleware
+
+Add `.global` suffix to run on every route:
+
+```ts middleware/analytics.global.ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  console.log('Navigating to:', to.path)
+})
+```
+
+#### Inline Middleware
+
+Define middleware directly in your page:
+
+```vue
+<script setup>
+definePageMeta({
+  middleware: [
+    function (to, from) {
+      // Custom inline middleware
+      if (to.path !== '/') {
+        return navigateTo('/')
+      }
+    }
+  ]
+})
+</script>
+```
+
+### Middleware Helpers
+
+Nuxt 3 provides several helper functions for middleware:
+
+- `navigateTo(route)` - Redirect to a route
+- `abortNavigation(error?)` - Cancel navigation with optional error
+- `useState()` - Access shared state
+- `useCookie()` - Access cookies
+- `useRequestHeaders()` - Access request headers (server-only)
+
+### Example: Authentication Middleware
+
+```ts middleware/auth.ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  const auth = useState('auth')
+  
+  // Allow access to login page
+  if (to.path === '/login') {
+    return
+  }
+  
+  // Redirect to login if not authenticated
+  if (!auth.value.isAuthenticated) {
+    return navigateTo('/login')
+  }
+  
+  // Check permissions for protected routes
+  if (to.meta.requiresAdmin && !auth.value.isAdmin) {
+    return abortNavigation({
+      statusCode: 403,
+      message: 'Access Denied'
+    })
+  }
+})
+```
+
+### Example: Redirect Middleware
+
+<CodeGroup>
+```js Nuxt 2
+export default function ({ route, redirect }) {
+  if (route.path === '/old-path') {
+    return redirect(301, '/new-path')
+  }
+}
+```
+
+```ts Nuxt 3
+export default defineNuxtRouteMiddleware((to) => {
+  if (to.path === '/old-path') {
+    return navigateTo('/new-path', { redirectCode: 301 })
+  }
+})
+```
+</CodeGroup>
+
+## Migration Checklist
+
+### Plugins
+- [ ] Wrap plugins with `defineNuxtPlugin`
+- [ ] Replace `inject()` with `nuxtApp.provide()`
+- [ ] Remove plugin entries from `nuxt.config`
+- [ ] Rename files with `.client` or `.server` suffixes as needed
+- [ ] Update plugin imports to use `useNuxtApp()`
+
+### Middleware
+- [ ] Wrap middleware with `defineNuxtRouteMiddleware`
+- [ ] Replace `redirect()` with `navigateTo()`
+- [ ] Replace `context` access with appropriate composables
+- [ ] Move global middleware to `.global.ts` files
+- [ ] Update page middleware usage to use `definePageMeta`

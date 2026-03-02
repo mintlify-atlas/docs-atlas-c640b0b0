@@ -1,0 +1,120 @@
+---
+title: useLazyFetch
+description: This wrapper around useFetch triggers navigation immediately.
+---
+
+`useLazyFetch` provides a wrapper around `useFetch` that triggers navigation before the handler is resolved by setting the `lazy` option to `true`.
+
+By default, `useFetch` blocks navigation until its async handler is resolved. `useLazyFetch` allows navigation to proceed immediately, with data being fetched in the background.
+
+## Usage
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+const { status, data: posts } = await useLazyFetch('/api/posts')
+</script>
+
+<template>
+  <div v-if="status === 'pending'">
+    Loading ...
+  </div>
+  <div v-else>
+    <div v-for="post in posts">
+      <!-- do something -->
+    </div>
+  </div>
+</template>
+```
+
+<Note>
+  `useLazyFetch` has the same signature as `useFetch`.
+</Note>
+
+<Warning>
+  Awaiting `useLazyFetch` only ensures the call is initialized. On client-side navigation, data may not be immediately available, and you must handle the `pending` state in your component's template.
+</Warning>
+
+<Warning>
+  `useLazyFetch` is a reserved function name transformed by the compiler, so you should not name your own function `useLazyFetch`.
+</Warning>
+
+## Parameters
+
+`useLazyFetch` accepts the same parameters as `useFetch`:
+
+<ParamField path="url" type="string | Request | Ref<string | Request> | (() => string | Request)" required>
+  The URL or request to fetch.
+</ParamField>
+
+<ParamField path="options" type="UseFetchOptions<T>">
+  Same as `useFetch` options, with `lazy` automatically set to `true`. See [useFetch parameters](/api/composables/use-fetch#parameters) for full details.
+</ParamField>
+
+## Return Values
+
+Returns the same `AsyncData` object as `useFetch`:
+
+<ResponseField name="data" type="Ref<T | undefined>">
+  The result of the asynchronous fetch.
+</ResponseField>
+
+<ResponseField name="refresh" type="(opts?: AsyncDataExecuteOptions) => Promise<void>">
+  Function to manually refresh the data.
+</ResponseField>
+
+<ResponseField name="execute" type="(opts?: AsyncDataExecuteOptions) => Promise<void>">
+  Alias for `refresh`.
+</ResponseField>
+
+<ResponseField name="error" type="Ref<Error | undefined>">
+  Error object if the data fetching failed.
+</ResponseField>
+
+<ResponseField name="status" type="Ref<'idle' | 'pending' | 'success' | 'error'>">
+  Status of the data request.
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  Resets `data` to `undefined`, `error` to `undefined`, sets `status` to `idle`, and cancels any pending requests.
+</ResponseField>
+
+## Examples
+
+### Handling Pending State
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+/* Navigation will occur before fetching is complete.
+ * Handle 'pending' and 'error' states directly within your component's template
+ */
+const { status, data: posts } = await useLazyFetch('/api/posts')
+watch(posts, (newPosts) => {
+  // Because posts might start out null, you won't have access
+  // to its contents immediately, but you can watch it.
+})
+</script>
+
+<template>
+  <div v-if="status === 'pending'">
+    Loading ...
+  </div>
+  <div v-else>
+    <div v-for="post in posts">
+      <!-- do something -->
+    </div>
+  </div>
+</template>
+```
+
+## Type
+
+```ts
+export function useLazyFetch<DataT, ErrorT> (
+  url: string | Request | Ref<string | Request> | (() => string | Request),
+  options?: UseFetchOptions<DataT>,
+): Promise<AsyncData<DataT, ErrorT>>
+```
+
+<Note>
+  `useLazyFetch` is equivalent to `useFetch` with `lazy: true` option set.
+</Note>

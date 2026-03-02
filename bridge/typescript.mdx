@@ -1,0 +1,209 @@
+---
+title: TypeScript in Bridge
+description: Learn how to enable and use TypeScript with Nuxt Bridge for better type safety and developer experience.
+---
+
+Nuxt Bridge provides improved TypeScript support, bringing you closer to the Nuxt 3 developer experience.
+
+## Remove Modules
+
+Before enabling TypeScript in Bridge, you should remove deprecated TypeScript modules:
+
+- **Remove `@nuxt/typescript-build`** - Bridge enables the same functionality
+- **Remove `@nuxt/typescript-runtime` and `nuxt-ts`** - Nuxt 2 has built-in runtime support
+
+```diff package.json
+{
+  "devDependencies": {
+-   "@nuxt/typescript-build": "^2.1.0",
+-   "@nuxt/typescript-runtime": "^2.1.0"
+  }
+}
+```
+
+## Enable TypeScript
+
+### Set bridge.typescript
+
+Enable TypeScript support in your `nuxt.config`:
+
+```ts nuxt.config.ts
+import { defineNuxtConfig } from '@nuxt/bridge'
+
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    nitro: false, // If migration to Nitro is complete, set to true
+  },
+})
+```
+
+## Update tsconfig.json
+
+If you are using TypeScript, you can edit your `tsconfig.json` to benefit from auto-generated Nuxt types:
+
+```diff tsconfig.json
+{
++ "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    ...
+  }
+}
+```
+
+<Note>
+As `.nuxt/tsconfig.json` is generated and not checked into version control, you'll need to generate that file before running your tests. Add `nuxi prepare` as a step before your tests, otherwise you'll see `TS5083: Cannot read file '~/.nuxt/tsconfig.json'`
+
+For modern Nuxt projects, we recommend using TypeScript project references instead of directly extending `.nuxt/tsconfig.json`.
+</Note>
+
+## Path Resolution
+
+<Warning>
+Keep in mind that all options extended from `./.nuxt/tsconfig.json` will be overwritten by the options defined in your `tsconfig.json`.
+
+Overwriting options such as `"compilerOptions.paths"` with your own configuration will lead TypeScript to not factor in the module resolutions from `./.nuxt/tsconfig.json`. This can lead to module resolutions such as `#imports` not being recognized.
+
+In case you need to extend options provided by `./.nuxt/tsconfig.json` further, you can use the `alias` property within your `nuxt.config`. `nuxi` will pick them up and extend `./.nuxt/tsconfig.json` accordingly.
+</Warning>
+
+### Configure Aliases
+
+If you need custom path aliases, configure them in your `nuxt.config`:
+
+```ts nuxt.config.ts
+import { defineNuxtConfig } from '@nuxt/bridge'
+
+export default defineNuxtConfig({
+  alias: {
+    '@services': '/services',
+    '@models': '/models',
+  },
+})
+```
+
+## Type Checking
+
+Bridge enables type checking during development and build:
+
+```bash
+# Type check your project
+npx nuxi typecheck
+```
+
+You can also enable type checking during development:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  typescript: {
+    typeCheck: true
+  }
+})
+```
+
+## Auto-generated Types
+
+Bridge automatically generates type definitions for:
+
+- Components
+- Composables
+- Layouts
+- Middleware
+- Plugins
+- Pages
+
+These are located in `.nuxt/types/` and include:
+
+- `components.d.ts` - Component types
+- `imports.d.ts` - Auto-import types
+- `middleware.d.ts` - Middleware types
+- `layouts.d.ts` - Layout types
+
+## Strict Type Checking
+
+You can enable strict type checking for better type safety:
+
+```json tsconfig.json
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true
+  }
+}
+```
+
+## Using TypeScript in Components
+
+With Bridge, you can use TypeScript in your components:
+
+```vue
+<script setup lang="ts">
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+const user = ref<User>({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com'
+})
+
+function updateUser(newUser: User) {
+  user.value = newUser
+}
+</script>
+```
+
+## Typing Runtime Config
+
+You can type your runtime config:
+
+```ts
+declare module '@nuxt/schema' {
+  interface RuntimeConfig {
+    apiSecret: string
+  }
+  interface PublicRuntimeConfig {
+    apiBase: string
+  }
+}
+
+export {}
+```
+
+## Common Issues
+
+### Module Resolution Errors
+
+If you see errors like `Cannot find module '#imports'`:
+
+1. Make sure you've run `nuxi prepare`
+2. Check that `tsconfig.json` extends `.nuxt/tsconfig.json`
+3. Restart your TypeScript server
+
+### Build Errors
+
+If you encounter build errors:
+
+1. Clear the `.nuxt` directory: `rm -rf .nuxt`
+2. Regenerate types: `nuxi prepare`
+3. Rebuild your project: `nuxi build`
+
+## Benefits of TypeScript in Bridge
+
+1. **Type Safety** - Catch errors at compile time
+2. **Better IDE Support** - Enhanced autocomplete and IntelliSense
+3. **Refactoring** - Safer code refactoring
+4. **Documentation** - Types serve as inline documentation
+5. **Nuxt 3 Compatibility** - Same TypeScript setup as Nuxt 3
+
+## Next Steps
+
+After enabling TypeScript, continue with:
+
+- [Composition API migration](/bridge/composition-api)
+- [Bridge configuration](/bridge/configuration)

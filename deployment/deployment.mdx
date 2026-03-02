@@ -1,0 +1,278 @@
+---
+title: Deployment Overview
+description: Learn how to deploy your Nuxt application to any hosting provider, from Node.js servers to static hosting and edge environments.
+---
+
+A Nuxt application can be deployed on a Node.js server, pre-rendered for static hosting, or deployed to serverless or edge (CDN) environments.
+
+<Note>
+  Looking for cloud providers that support Nuxt? Check out the [Hosting providers](/deployment/deployment) section for a comprehensive list.
+</Note>
+
+## Deployment Options
+
+Nuxt offers three primary deployment strategies:
+
+<CardGroup cols={3}>
+  <Card title="Node.js Server" icon="server" href="/deployment/node-server">
+    Deploy to any Node.js hosting environment with full SSR support
+  </Card>
+  <Card title="Static Hosting" icon="file-code" href="/deployment/static-hosting">
+    Pre-render your site and deploy to static hosting services
+  </Card>
+  <Card title="Edge Deployment" icon="globe" href="/deployment/edge-deployment">
+    Deploy to edge networks and serverless platforms
+  </Card>
+</CardGroup>
+
+## Deployment Presets
+
+Nuxt can be deployed to several cloud providers with minimal configuration using deployment presets.
+
+### Configuring Presets
+
+You can explicitly set the desired preset in your `nuxt.config.ts` file:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'node-server',
+  },
+})
+```
+
+Alternatively, use the `NITRO_PRESET` environment variable when running `nuxt build`:
+
+```bash
+NITRO_PRESET=node-server nuxt build
+```
+
+### Available Presets
+
+Nitro offers more than 15 deployment presets for different cloud providers and servers:
+
+<AccordionGroup>
+  <Accordion title="Cloud Platforms">
+    - **Vercel** - Zero-config deployment to Vercel
+    - **Netlify** - Deploy to Netlify with edge functions support
+    - **Cloudflare Pages** - Deploy to Cloudflare Pages with Workers
+    - **AWS Lambda** - Serverless deployment to AWS
+    - **Azure** - Deploy to Azure Functions
+    - **Google Cloud** - Deploy to Google Cloud Functions
+  </Accordion>
+
+  <Accordion title="Edge & CDN">
+    - **Cloudflare Workers** - Deploy to Cloudflare's edge network
+    - **Deno Deploy** - Deploy to Deno's edge runtime
+    - **Netlify Edge** - Deploy to Netlify's edge functions
+  </Accordion>
+
+  <Accordion title="Traditional Hosting">
+    - **Node.js Server** - Standard Node.js deployment
+    - **Static Hosting** - Pre-rendered static files
+    - **PM2** - Process management with PM2
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Check the [Nitro deployment documentation](https://nitro.build/deploy) for all available deployment presets and providers.
+</Note>
+
+## Rendering Modes
+
+Understanding Nuxt's rendering modes helps you choose the right deployment strategy:
+
+### Server-Side Rendering (SSR)
+
+Pages are rendered on the server for each request. This is the default mode and provides:
+- SEO-friendly HTML
+- Fast initial page load
+- Dynamic content per request
+- Full access to server APIs
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  ssr: true, // default
+})
+```
+
+### Static Site Generation (SSG)
+
+Pages are pre-rendered at build time:
+
+```bash
+npx nuxt generate
+```
+
+Benefits:
+- Fastest possible page loads
+- No server required
+- Perfect for CDN distribution
+- SEO optimized
+
+### Client-Side Rendering (CSR)
+
+Pages are rendered entirely in the browser:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  ssr: false,
+})
+```
+
+<Warning>
+  Client-side rendering loses many SEO benefits. Use `<ClientOnly>` components instead to wrap portions that cannot be server-rendered.
+</Warning>
+
+## Hybrid Rendering
+
+Nuxt allows you to mix rendering strategies per route using route rules:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    // Homepage is pre-rendered at build time
+    '/': { prerender: true },
+    // Product pages are cached for 1 hour
+    '/products/**': { swr: 3600 },
+    // Blog uses ISR, regenerates in background
+    '/blog/**': { isr: true },
+    // Admin dashboard is always server-rendered
+    '/admin/**': { ssr: true },
+    // API routes use edge runtime
+    '/api/**': { cors: true, headers: { 'cache-control': 's-maxage=0' } },
+  },
+})
+```
+
+### Route Rule Options
+
+<ResponseField name="prerender" type="boolean">
+  Pre-render at build time for static hosting
+</ResponseField>
+
+<ResponseField name="ssr" type="boolean">
+  Enable or disable server-side rendering for this route
+</ResponseField>
+
+<ResponseField name="swr" type="number | boolean">
+  Stale-While-Revalidate caching in seconds
+</ResponseField>
+
+<ResponseField name="isr" type="number | boolean">
+  Incremental Static Regeneration (regenerates in background)
+</ResponseField>
+
+<ResponseField name="cache" type="object">
+  Cache configuration with maxAge and other options
+</ResponseField>
+
+## Environment Variables
+
+All Nuxt deployment presets respect runtime environment variables:
+
+<ParamField path="NITRO_PORT" type="string" default="3000">
+  The port to run the server on (also accepts `PORT`)
+</ParamField>
+
+<ParamField path="NITRO_HOST" type="string" default="0.0.0.0">
+  The host to bind the server to (also accepts `HOST`)
+</ParamField>
+
+<ParamField path="NITRO_PRESET" type="string">
+  The deployment preset to use during build
+</ParamField>
+
+<ParamField path="NITRO_SSL_CERT" type="string">
+  Path to SSL certificate for HTTPS (testing only)
+</ParamField>
+
+<ParamField path="NITRO_SSL_KEY" type="string">
+  Path to SSL key for HTTPS (testing only)
+</ParamField>
+
+## CDN and Proxy Configuration
+
+When deploying behind a CDN or proxy like Cloudflare, configure these settings to avoid issues:
+
+<Steps>
+  <Step title="Disable Rocket Loader">
+    In Cloudflare: **Speed > Settings > Content Optimization**
+    
+    Uncheck "Rocket Loader™" to prevent script injection that may cause hydration errors.
+  </Step>
+
+  <Step title="Disable Email Obfuscation">
+    In Cloudflare: **Security > Settings**
+    
+    Disable "Email Address Obfuscation" to avoid unwanted HTML modifications.
+  </Step>
+</Steps>
+
+<Warning>
+  CDN settings locations on dashboards may change. These settings are critical to prevent unnecessary re-rendering or hydration errors in production.
+</Warning>
+
+## Build Process
+
+Understand the build process for different deployment targets:
+
+<Tabs>
+  <Tab title="SSR Deployment">
+    ```bash
+    # Build for production
+    npm run build
+    
+    # Output directory structure:
+    # .output/
+    #   server/          # Server bundle
+    #   public/          # Static assets
+    #   nitro.json       # Nitro config
+    ```
+  </Tab>
+
+  <Tab title="Static Generation">
+    ```bash
+    # Generate static site
+    npm run generate
+    
+    # Output directory structure:
+    # .output/
+    #   public/          # Static HTML + assets
+    #     index.html
+    #     _payload.json
+    #     _nuxt/         # JS/CSS bundles
+    ```
+  </Tab>
+
+  <Tab title="Edge Deployment">
+    ```bash
+    # Build for edge runtime
+    NITRO_PRESET=cloudflare-pages npm run build
+    
+    # Output optimized for edge workers
+    # .output/
+    #   _worker.js       # Edge worker bundle
+    #   public/          # Static assets
+    ```
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+Choose your deployment strategy:
+
+<CardGroup cols={2}>
+  <Card title="Node.js Server" icon="server" href="/deployment/node-server">
+    Learn how to deploy to Node.js hosting environments
+  </Card>
+  <Card title="Static Hosting" icon="file-code" href="/deployment/static-hosting">
+    Pre-render and deploy to static hosts
+  </Card>
+  <Card title="Edge Deployment" icon="globe" href="/deployment/edge-deployment">
+    Deploy to edge networks and serverless platforms
+  </Card>
+  <Card title="Prerendering" icon="zap" href="/deployment/prerendering">
+    Configure prerendering and SSG
+  </Card>
+</CardGroup>

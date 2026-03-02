@@ -1,0 +1,75 @@
+---
+title: Nuxt Kit Overview
+description: '@nuxt/kit provides features for module authors to interact with Nuxt programmatically.'
+---
+
+Nuxt Kit provides composable utilities to make interacting with Nuxt Hooks, the Nuxt Interface and developing Nuxt modules super easy.
+
+<Card title="Nuxt Kit API Reference" icon="book" href="/api/kit">
+  Discover all Nuxt Kit utilities.
+</Card>
+
+## Usage
+
+### Install Dependency
+
+You can install the latest Nuxt Kit by adding it to the `dependencies` section of your `package.json`. However, please consider always explicitly installing the `@nuxt/kit` package even if it is already installed by Nuxt.
+
+<Warning>
+  `@nuxt/kit` and `@nuxt/schema` are key dependencies for Nuxt. If you are installing it separately, make sure that the versions of `@nuxt/kit` and `@nuxt/schema` are equal to or greater than your `nuxt` version to avoid any unexpected behavior.
+</Warning>
+
+```json package.json
+{
+  "dependencies": {
+    "@nuxt/kit": "npm:@nuxt/kit-nightly@latest"
+  }
+}
+```
+
+### Import Kit Utilities
+
+Once you've installed the package, you can import utilities from `@nuxt/kit`:
+
+```ts test.mjs
+import { useNuxt } from '@nuxt/kit'
+```
+
+<Note>
+  Nuxt Kit utilities are only available for modules and not meant to be imported in runtime (components, Vue composables, pages, plugins, or server routes).
+</Note>
+
+Nuxt Kit is an [esm-only package](/advanced/esm) meaning that you **cannot** `require('@nuxt/kit')`. As a workaround, use dynamic import in the CommonJS context:
+
+```ts test.cjs
+// This does NOT work!
+// const kit = require('@nuxt/kit')
+async function main () {
+  const kit = await import('@nuxt/kit')
+}
+main()
+```
+
+## Common Use Cases
+
+Nuxt Kit provides utilities for common module development tasks:
+
+### Working with Nuxt Hooks
+
+You can use Nuxt Kit to register hooks that execute at specific points in the Nuxt lifecycle. This allows you to extend or modify Nuxt's behavior.
+
+### Modifying the Nuxt Configuration
+
+You can programmatically modify the Nuxt configuration using Nuxt Kit utilities, allowing your module to add features or change settings.
+
+### Adding Templates and Virtual Modules
+
+Nuxt Kit makes it easy to add templates that generate code at build time or create virtual modules that don't exist on the filesystem.
+
+### Registering Components and Composables
+
+You can use Nuxt Kit to register components and composables that will be auto-imported in your Nuxt application.
+
+<Card title="Module Development Guide" icon="puzzle" href="/guide/modules">
+  Learn how to create your own Nuxt modules.
+</Card>

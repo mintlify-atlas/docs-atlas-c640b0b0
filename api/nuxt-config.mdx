@@ -1,0 +1,327 @@
+---
+title: nuxt.config.ts
+description: Complete reference for Nuxt configuration options in nuxt.config.ts
+---
+
+# nuxt.config.ts
+
+Discover all the options you can use in your `nuxt.config.ts` file.
+
+## Overview
+
+The `nuxt.config.ts` file is located at the root of your Nuxt project and can override or extend the application's behavior.
+
+A minimal configuration file exports the `defineNuxtConfig` function containing an object with your configuration. The `defineNuxtConfig` helper is globally available without import.
+
+```ts
+export default defineNuxtConfig({
+  // My Nuxt config
+})
+```
+
+## Configuration Options
+
+### alias
+
+You can improve your DX by defining additional aliases to access custom directories within your JavaScript and CSS.
+
+**Type:** `object`
+
+**Default:**
+```json
+{
+  "~": "/<rootDir>/app",
+  "@": "/<rootDir>/app",
+  "~~": "/<rootDir>",
+  "@@": "/<rootDir>",
+  "#shared": "/<rootDir>/shared",
+  "#server": "/<rootDir>/server",
+  "assets": "/<rootDir>/app/assets",
+  "public": "/<rootDir>/public",
+  "#build": "/<rootDir>/.nuxt",
+  "#internal/nuxt/paths": "/<rootDir>/.nuxt/paths.mjs"
+}
+```
+
+**Example:**
+```ts
+import { fileURLToPath } from 'node:url'
+
+export default defineNuxtConfig({
+  alias: {
+    'images': fileURLToPath(new URL('./assets/images', import.meta.url)),
+    'style': fileURLToPath(new URL('./assets/style', import.meta.url)),
+    'data': fileURLToPath(new URL('./assets/other/data', import.meta.url)),
+  },
+})
+```
+
+### app
+
+Nuxt App configuration.
+
+#### `app.baseURL`
+
+The base path of your Nuxt application.
+
+**Type:** `string`  
+**Default:** `"/"`
+
+```ts
+export default defineNuxtConfig({
+  app: {
+    baseURL: '/prefix/',
+  },
+})
+```
+
+This can also be set at runtime by setting the `NUXT_APP_BASE_URL` environment variable.
+
+#### `app.head`
+
+Set default configuration for `<head>` on every page.
+
+**Type:** `object`
+
+```ts
+export default defineNuxtConfig({
+  app: {
+    head: {
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      ],
+      script: [
+        { src: 'https://awesome-lib.js' },
+      ],
+      link: [
+        { rel: 'stylesheet', href: 'https://awesome-lib.css' },
+      ],
+    },
+  },
+})
+```
+
+### buildDir
+
+Define the directory where your built Nuxt files will be placed.
+
+**Type:** `string`  
+**Default:** `"/<rootDir>/.nuxt"`
+
+```ts
+export default defineNuxtConfig({
+  buildDir: 'nuxt-build',
+})
+```
+
+### components
+
+Configure Nuxt component auto-registration.
+
+**Type:** `object`
+
+**Default:**
+```json
+{
+  "dirs": [
+    {
+      "path": "~/components/global",
+      "global": true
+    },
+    "~/components"
+  ]
+}
+```
+
+Any components in the directories configured here can be used throughout your pages, layouts, and other components without needing to explicitly import them.
+
+### css
+
+You can define the CSS files/modules/libraries you want to set globally (included in every page).
+
+**Type:** `array`
+
+```ts
+export default defineNuxtConfig({
+  css: [
+    // Load a Node.js module directly (here it's a Sass file)
+    'bulma',
+    // CSS file in the project
+    '~/assets/css/main.css',
+    // SCSS file in the project
+    '~/assets/css/main.scss',
+  ],
+})
+```
+
+### devServer
+
+Configuration for the development server.
+
+#### `devServer.host`
+
+Dev server listening host.
+
+#### `devServer.port`
+
+Dev server listening port.
+
+**Type:** `number`  
+**Default:** `3000`
+
+#### `devServer.https`
+
+Whether to enable HTTPS.
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```ts
+export default defineNuxtConfig({
+  devServer: {
+    https: {
+      key: './server.key',
+      cert: './server.crt',
+    },
+  },
+})
+```
+
+### dir
+
+Customize default directory structure used by Nuxt.
+
+#### `dir.app`
+
+**Type:** `string`  
+**Default:** `"app"`
+
+#### `dir.pages`
+
+The directory which will be processed to auto-generate your application page routes.
+
+**Type:** `string`  
+**Default:** `"app/pages"`
+
+#### `dir.plugins`
+
+The plugins directory, each file of which will be auto-registered as a Nuxt plugin.
+
+**Type:** `string`  
+**Default:** `"app/plugins"`
+
+### extends
+
+Extend project from multiple local or remote sources.
+
+Value should be either a string or array of strings pointing to source directories or config path relative to current config. You can use `github:`, `gh:`, `gitlab:`, or `bitbucket:`.
+
+### modules
+
+Modules are Nuxt extensions which can extend its core functionality and add endless integrations.
+
+**Type:** `array`
+
+```ts
+export default defineNuxtConfig({
+  modules: [
+    // Using package name
+    '@nuxt/scripts',
+    // Relative to your project rootDir
+    '~~/custom-modules/awesome.js',
+    // Providing options
+    ['@nuxtjs/google-analytics', { ua: 'X1234567' }],
+    // Inline definition
+    function () {},
+  ],
+})
+```
+
+### nitro
+
+Configuration for Nitro.
+
+See [Nitro configuration docs](https://nitro.build/config) for more information.
+
+### runtimeConfig
+
+Runtime config allows passing dynamic config and environment variables to the Nuxt app context.
+
+**Type:** `object`
+
+```ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    apiKey: '', // Private, server-only
+    public: {
+      baseURL: '', // Exposed to the frontend
+    },
+  },
+})
+```
+
+Values are automatically replaced by matching env variables at runtime, e.g., setting `NUXT_API_KEY=my-api-key` would overwrite the `apiKey` value.
+
+### ssr
+
+Whether to enable rendering of HTML - either dynamically (in server mode) or at generate time. If set to `false`, generated pages will have no content.
+
+**Type:** `boolean`  
+**Default:** `true`
+
+### typescript
+
+Configuration for Nuxt's TypeScript integration.
+
+#### `typescript.typeCheck`
+
+Enable build-time type checking.
+
+**Type:** `boolean`  
+**Default:** `false`
+
+If set to true, this will type check in development. You can restrict this to build-time type checking by setting it to `'build'`. Requires `typescript` and `vue-tsc` as dev dependencies.
+
+#### `typescript.strict`
+
+TypeScript comes with certain checks to give you more safety and analysis of your program.
+
+**Type:** `boolean`  
+**Default:** `true`
+
+### vite
+
+Configuration that will be passed directly to Vite.
+
+See [Vite configuration docs](https://vite.dev/config/) for more information.
+
+### vue
+
+Vue.js config.
+
+#### `vue.compilerOptions`
+
+Options for the Vue compiler that will be passed at build time.
+
+See [Vue documentation](https://vuejs.org/api/application#app-config-compileroptions) for more information.
+
+#### `vue.runtimeCompiler`
+
+Include Vue compiler in runtime bundle.
+
+**Type:** `boolean`  
+**Default:** `false`
+
+## Environment Variables
+
+Many configuration options can be overridden using environment variables:
+
+- `NUXT_APP_BASE_URL` - Override `app.baseURL`
+- `NUXT_APP_CDN_URL` - Override `app.cdnURL`
+- Runtime config values using `NUXT_` prefix
+
+## Learn More
+
+- [Configuration Documentation](/configuration)
+- [Runtime Config](/advanced/runtime-config)
+- [Modules Guide](/concepts/modules)

@@ -1,0 +1,45 @@
+---
+title: 'preloadComponents'
+description: 'Nuxt provides utilities to give you control over preloading components.'
+---
+
+Preloading components loads components that your page will need very soon, which you want to start loading early in rendering lifecycle. This ensures they are available earlier and are less likely to block the page's render, improving performance.
+
+Use `preloadComponents` to manually preload individual components that have been registered globally in your Nuxt app. By default Nuxt registers these as async components. You must use the Pascal-cased version of the component name.
+
+## Type Signature
+
+```ts
+function preloadComponents(components: string | string[]): Promise<void>
+```
+
+## Parameters
+
+<ParamField path="components" type="string | string[]" required>
+  Component name(s) to preload. Can be a single component name string or an array of component names. Must use Pascal-case naming.
+</ParamField>
+
+## Examples
+
+### Preload a Single Component
+
+```ts
+await preloadComponents('MyGlobalComponent')
+```
+
+### Preload Multiple Components
+
+```ts
+await preloadComponents(['MyGlobalComponent1', 'MyGlobalComponent2'])
+```
+
+## Notes
+
+<Note>
+On server, `preloadComponents` will have no effect.
+</Note>
+
+## See Also
+
+- [`prefetchComponents`](/api/utils/prefetch-components)
+- [`preloadRouteComponents`](/api/utils/preload-route-components)

@@ -1,0 +1,106 @@
+---
+title: useLoadingIndicator
+description: This composable gives you access to the loading state of the app page.
+---
+
+## Description
+
+A composable which returns the loading state of the page. Used by `<NuxtLoadingIndicator>` and controllable. It hooks into `page:loading:start` and `page:loading:end` to change its state.
+
+## Parameters
+
+<ParamField path="options" type="object">
+  Configuration options for the loading indicator.
+
+  <ParamField path="duration" type="number" default="2000">
+    Duration of the loading bar, in milliseconds.
+  </ParamField>
+
+  <ParamField path="throttle" type="number" default="200">
+    Throttle the appearing and hiding, in milliseconds.
+  </ParamField>
+
+  <ParamField path="estimatedProgress" type="(duration: number, elapsed: number) => number">
+    By default Nuxt will back off as it approaches 100%. You can provide a custom function to customize the progress estimation, which is a function that receives the duration of the loading bar (above) and the elapsed time. It should return a value between 0 and 100.
+  </ParamField>
+</ParamField>
+
+## Return Values
+
+<ResponseField name="isLoading" type="Ref<boolean>">
+  The loading state.
+</ResponseField>
+
+<ResponseField name="error" type="Ref<boolean>">
+  The error state.
+</ResponseField>
+
+<ResponseField name="progress" type="Ref<number>">
+  The progress state. From `0` to `100`.
+</ResponseField>
+
+<ResponseField name="start" type="(opts?: { force?: boolean }) => void">
+  Set `isLoading` to true and start to increase the `progress` value. `start` accepts a `{ force: true }` option to skip the interval and show the loading state immediately.
+</ResponseField>
+
+<ResponseField name="set" type="(value: number, opts?: { force?: boolean }) => void">
+  Set the `progress` value to a specific value. `set` accepts a `{ force: true }` option to skip the interval and show the loading state immediately.
+</ResponseField>
+
+<ResponseField name="finish" type="(opts?: { force?: boolean, error?: boolean }) => void">
+  Set the `progress` value to `100`, stop all timers and intervals then reset the loading state `500` ms later. `finish` accepts a `{ force: true }` option to skip the interval before the state is reset, and `{ error: true }` to change the loading bar color and set the error property to true.
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  Used by `finish()`. Clear all timers and intervals used by the composable.
+</ResponseField>
+
+## Examples
+
+### Basic Usage
+
+```vue
+<script setup lang="ts">
+const { progress, isLoading, start, finish, clear } = useLoadingIndicator({
+  duration: 2000,
+  throttle: 200,
+  // This is how progress is calculated by default
+  estimatedProgress: (duration, elapsed) => (2 / Math.PI * 100) * Math.atan(elapsed / duration * 100 / 50),
+})
+</script>
+```
+
+### Force Start
+
+```vue
+<script setup lang="ts">
+const { start, set } = useLoadingIndicator()
+// same as set(0, { force: true })
+// set the progress to 0, and show loading immediately
+start({ force: true })
+</script>
+```
+
+## Type
+
+```ts
+interface LoadingIndicatorOpts {
+  duration?: number
+  throttle?: number
+  estimatedProgress?: (duration: number, elapsed: number) => number
+}
+
+interface LoadingIndicator {
+  isLoading: Ref<boolean>
+  error: Ref<boolean>
+  progress: Ref<number>
+  start: (opts?: { force?: boolean }) => void
+  set: (value: number, opts?: { force?: boolean }) => void
+  finish: (opts?: { force?: boolean, error?: boolean }) => void
+  clear: () => void
+}
+
+export function useLoadingIndicator (
+  opts?: LoadingIndicatorOpts
+): LoadingIndicator
+```

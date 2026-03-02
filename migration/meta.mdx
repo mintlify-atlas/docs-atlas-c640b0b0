@@ -1,0 +1,232 @@
+---
+title: Meta Tags Migration
+description: Learn how to migrate your meta tags from Nuxt 2 to Nuxt 3's new meta management system.
+---
+
+Nuxt 3 provides several different ways to manage your meta tags:
+
+1. Through your `nuxt.config`
+2. Through the `useHead` composable
+3. Through global meta components
+
+You can customize `title`, `titleTemplate`, `base`, `script`, `noscript`, `style`, `meta`, `link`, `htmlAttrs` and `bodyAttrs`.
+
+<Tip>
+Nuxt currently uses [`Unhead`](https://github.com/unjs/unhead) to manage your meta tags, but implementation details may change.
+</Tip>
+
+## Migration Steps
+
+1. **In your `nuxt.config`, rename `head` to `meta`** - Consider moving this shared meta configuration into your `app.vue` instead. Note that objects no longer have a `hid` key for deduplication.
+2. **Migrate to `useHead` if you need to access component state** - You might also consider using the built-in meta-components.
+3. **Use `head()` method with Options API** - If you need to use the Options API, there is a `head()` method you can use when you use `defineNuxtComponent`.
+
+## Using useHead
+
+The `useHead` composable provides a reactive way to manage your head tags.
+
+<CodeGroup>
+```vue Nuxt 2
+<script>
+export default {
+  data: () => ({
+    title: 'My App',
+    description: 'My App Description',
+  }),
+  head () {
+    return {
+      title: this.title,
+      meta: [{
+        hid: 'description',
+        name: 'description',
+        content: this.description,
+      }],
+    }
+  },
+}
+</script>
+```
+
+```vue Nuxt 3
+<script setup lang="ts">
+const title = ref('My App')
+const description = ref('My App Description')
+
+// This will be reactive when you change title/description above
+useHead({
+  title,
+  meta: [{
+    name: 'description',
+    content: description,
+  }],
+})
+</script>
+```
+</CodeGroup>
+
+### Key Differences
+
+- **No `hid` property** - Nuxt 3 uses the `name` or `property` attribute for deduplication
+- **Reactive by default** - Pass refs or computed values for reactivity
+- **Type-safe** - Full TypeScript support
+
+## Using Meta Components
+
+Nuxt 3 also provides meta components that you can use to accomplish the same task. While these components look similar to HTML tags, they are provided by Nuxt and have similar functionality.
+
+<CodeGroup>
+```vue Nuxt 2
+<script>
+export default {
+  head () {
+    return {
+      title: 'My App',
+      meta: [{
+        hid: 'description',
+        name: 'description',
+        content: 'My App Description',
+      }],
+    }
+  },
+}
+</script>
+```
+
+```vue Nuxt 3
+<template>
+  <div>
+    <Head>
+      <Title>My App</Title>
+      <Meta
+        name="description"
+        content="My app description"
+      />
+    </Head>
+    <!-- Your page content -->
+  </div>
+</template>
+```
+</CodeGroup>
+
+### Important Notes
+
+<Warning>
+1. Make sure you use capital letters for these component names to distinguish them from native HTML elements (`<Title>` rather than `<title>`).
+2. You can place these components anywhere in your template for your page.
+</Warning>
+
+### Available Meta Components
+
+- `<Title>` - Set the page title
+- `<Meta>` - Set meta tags
+- `<Link>` - Set link tags (favicons, stylesheets, etc.)
+- `<Style>` - Set inline styles
+- `<Script>` - Set script tags
+- `<NoScript>` - Set noscript content
+- `<Base>` - Set the base URL
+- `<Html>` - Set HTML attributes
+- `<Body>` - Set body attributes
+
+## Using Options API
+
+If you must use the Options API, you can use the `head()` method with `defineNuxtComponent`:
+
+```vue Nuxt 3 (Options API)
+<script>
+// if using options API `head` method you must use `defineNuxtComponent`
+export default defineNuxtComponent({
+  head (nuxtApp) {
+    // `head` receives the nuxt app but cannot access the component instance
+    return {
+      meta: [{
+        name: 'description',
+        content: 'This is my page description.',
+      }],
+    }
+  },
+})
+</script>
+```
+
+## Common Meta Patterns
+
+### Dynamic Page Title
+
+```vue
+<script setup>
+const route = useRoute()
+const title = computed(() => `Page: ${route.params.id}`)
+
+useHead({
+  title
+})
+</script>
+```
+
+### SEO Meta Tags
+
+```vue
+<script setup>
+useHead({
+  title: 'My Page Title',
+  meta: [
+    { name: 'description', content: 'My page description' },
+    { name: 'keywords', content: 'nuxt, vue, javascript' },
+    // Open Graph
+    { property: 'og:title', content: 'My Page Title' },
+    { property: 'og:description', content: 'My page description' },
+    { property: 'og:image', content: 'https://example.com/image.jpg' },
+    // Twitter Card
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'My Page Title' },
+    { name: 'twitter:description', content: 'My page description' },
+  ],
+})
+</script>
+```
+
+### Adding External Scripts
+
+```vue
+<script setup>
+useHead({
+  script: [
+    {
+      src: 'https://example.com/script.js',
+      async: true,
+      defer: true,
+    }
+  ]
+})
+</script>
+```
+
+### Title Template
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    head: {
+      titleTemplate: '%s - My App',
+    }
+  }
+})
+```
+
+Then in your pages:
+
+```vue
+<script setup>
+useHead({
+  title: 'About' // Will render as "About - My App"
+})
+</script>
+```
+
+## Migration Checklist
+
+1. Rename `head` to `meta` in `nuxt.config`
+2. Remove `hid` properties from meta tags
+3. Replace `head()` option with `useHead` composable or meta components
+4. Update any `this.$meta()` calls to use `useHead`
+5. Make meta data reactive by using `ref` or `computed`

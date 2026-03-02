@@ -1,0 +1,343 @@
+---
+title: SEO and Meta Tags
+description: Manage your Nuxt app's SEO with powerful head configuration, composables, and components powered by Unhead.
+---
+
+Nuxt provides comprehensive SEO and meta tag management powered by [Unhead](https://unhead.unjs.io). You can configure sensible defaults and use powerful composables to manage your app's head tags dynamically.
+
+## Nuxt Config
+
+Set static head tags for your entire app using the `app.head` property in your `nuxt.config.ts`:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    head: {
+      title: 'Nuxt', // default fallback title
+      htmlAttrs: {
+        lang: 'en',
+      },
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      ],
+    },
+  },
+})
+```
+</CodeGroup>
+
+<Info>
+This method does not support reactive data. Use `useHead()` in `app.vue` for reactive meta tags.
+</Info>
+
+Set tags here that won't change, such as your site title default, language, and favicon.
+
+### Default Tags
+
+Nuxt provides these default tags to ensure your website works well out of the box:
+
+- **viewport**: `width=device-width, initial-scale=1`
+- **charset**: `utf-8`
+
+You can override these defaults using keyed shortcuts:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    head: {
+      charset: 'utf-16',
+      viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+    },
+  },
+})
+```
+</CodeGroup>
+
+## useHead Composable
+
+Use the `useHead` composable to manage head tags programmatically with full reactive support:
+
+<CodeGroup>
+```vue app/app.vue
+<script setup lang="ts">
+useHead({
+  title: 'My App',
+  meta: [
+    { name: 'description', content: 'My amazing site.' },
+  ],
+  bodyAttrs: {
+    class: 'test',
+  },
+  script: [{ innerHTML: 'console.log(\'Hello world\')' }],
+})
+</script>
+```
+</CodeGroup>
+
+For more control, explore `useHead` and `useHeadSafe` composables in the API documentation.
+
+## useSeoMeta Composable
+
+Use `useSeoMeta` to define SEO meta tags as a type-safe object, helping you avoid typos and common mistakes:
+
+<CodeGroup>
+```vue app/app.vue
+<script setup lang="ts">
+useSeoMeta({
+  title: 'My Amazing Site',
+  ogTitle: 'My Amazing Site',
+  description: 'This is my amazing site, let me tell you all about it.',
+  ogDescription: 'This is my amazing site, let me tell you all about it.',
+  ogImage: 'https://example.com/image.png',
+  twitterCard: 'summary_large_image',
+})
+</script>
+```
+</CodeGroup>
+
+This composable prevents common errors like using `name` instead of `property` for Open Graph tags.
+
+## Meta Components
+
+If you prefer defining head tags in your template, Nuxt provides these components: `<Title>`, `<Base>`, `<NoScript>`, `<Style>`, `<Meta>`, `<Link>`, `<Body>`, `<Html>`, and `<Head>`.
+
+<CodeGroup>
+```vue app/app.vue
+<script setup lang="ts">
+const title = ref('Hello World')
+</script>
+
+<template>
+  <div>
+    <Head>
+      <Title>{{ title }}</Title>
+      <Meta
+        name="description"
+        :content="title"
+      />
+      <Style>
+        body { background-color: green; }
+      </Style>
+    </Head>
+
+    <h1>{{ title }}</h1>
+  </div>
+</template>
+```
+</CodeGroup>
+
+<Note>
+Note the capitalization of these components to avoid conflicts with native HTML tags.
+</Note>
+
+<Tip>
+Wrap your components in `<Head>` or `<Html>` for more intuitive tag deduplication.
+</Tip>
+
+## Reactivity
+
+All head properties support reactivity through computed values, getters, or reactive objects:
+
+<CodeGroup>
+```vue useHead
+<script setup lang="ts">
+const description = ref('My amazing site.')
+
+useHead({
+  meta: [
+    { name: 'description', content: description },
+  ],
+})
+</script>
+```
+
+```vue useSeoMeta
+<script setup lang="ts">
+const description = ref('My amazing site.')
+
+useSeoMeta({
+  description,
+})
+</script>
+```
+
+```vue Components
+<script setup lang="ts">
+const description = ref('My amazing site.')
+</script>
+
+<template>
+  <div>
+    <Meta
+      name="description"
+      :content="description"
+    />
+  </div>
+</template>
+```
+</CodeGroup>
+
+## Title Templates
+
+Use `titleTemplate` to provide a dynamic template for customizing page titles. The template can be a string (where `%s` is replaced with the title) or a function:
+
+<CodeGroup>
+```vue useHead
+<script setup lang="ts">
+useHead({
+  titleTemplate: (titleChunk) => {
+    return titleChunk ? `${titleChunk} - Site Title` : 'Site Title'
+  },
+})
+</script>
+```
+</CodeGroup>
+
+<Note>
+Set `titleTemplate` in your `app.vue` file to apply it across all pages. You cannot use function-based templates in `nuxt.config`.
+</Note>
+
+When you set the title to `My Page` on another page, it appears as "My Page - Site Title" in the browser tab.
+
+## Template Parameters
+
+Use `templateParams` for additional placeholders beyond the default `%s`:
+
+<CodeGroup>
+```vue
+<script setup lang="ts">
+useHead({
+  titleTemplate: (titleChunk) => {
+    return titleChunk ? `${titleChunk} %separator %siteName` : '%siteName'
+  },
+  templateParams: {
+    siteName: 'Site Title',
+    separator: '-',
+  },
+})
+</script>
+```
+</CodeGroup>
+
+## Body Tags
+
+Use `tagPosition: 'bodyClose'` to append tags to the end of the `<body>` tag:
+
+<CodeGroup>
+```vue
+<script setup lang="ts">
+useHead({
+  script: [
+    {
+      src: 'https://third-party-script.com',
+      tagPosition: 'bodyClose',
+    },
+  ],
+})
+</script>
+```
+</CodeGroup>
+
+Valid options are: `'head'`, `'bodyClose'`, or `'bodyOpen'`.
+
+## Practical Examples
+
+### Page-Specific Meta with definePageMeta
+
+Set metadata based on the current route using `definePageMeta` with `useHead`:
+
+<CodeGroup>
+```vue pages/some-page.vue
+<script setup lang="ts">
+definePageMeta({
+  title: 'Some Page',
+})
+</script>
+```
+
+```vue layouts/default.vue
+<script setup lang="ts">
+const route = useRoute()
+
+useHead({
+  meta: [{ property: 'og:title', content: `App Name - ${route.meta.title}` }],
+})
+</script>
+```
+</CodeGroup>
+
+### Dynamic Titles
+
+Set dynamic page titles using `titleTemplate`:
+
+<CodeGroup>
+```vue app/app.vue (String)
+<script setup lang="ts">
+useHead({
+  titleTemplate: '%s - Site Title',
+})
+</script>
+```
+
+```vue app/app.vue (Function)
+<script setup lang="ts">
+useHead({
+  titleTemplate: (productCategory) => {
+    return productCategory
+      ? `${productCategory} - Site Title`
+      : 'Site Title'
+  },
+})
+</script>
+```
+</CodeGroup>
+
+### External CSS and Fonts
+
+Enable Google Fonts using the `link` property:
+
+<CodeGroup>
+```vue useHead
+<script setup lang="ts">
+useHead({
+  link: [
+    {
+      rel: 'preconnect',
+      href: 'https://fonts.googleapis.com',
+    },
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Roboto&display=swap',
+      crossorigin: '',
+    },
+  ],
+})
+</script>
+```
+
+```vue Components
+<template>
+  <div>
+    <Link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <Link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      crossorigin=""
+    />
+  </div>
+</template>
+```
+</CodeGroup>
+
+## Best Practices
+
+1. **Use useSeoMeta for SEO**: Leverage type safety to avoid common meta tag mistakes
+2. **Set defaults in app.vue**: Apply site-wide settings using `useHead` in `app.vue`
+3. **Override per page**: Use `definePageMeta` and `useHead` in pages for page-specific meta
+4. **Keep it reactive**: Use refs and computed values to update meta tags dynamically
+5. **Follow Open Graph standards**: Ensure proper `og:` and `twitter:` tags for social sharing

@@ -1,0 +1,49 @@
+---
+title: 'prefetchComponents'
+description: 'Nuxt provides utilities to give you control over prefetching components.'
+---
+
+Prefetching component downloads the code in the background, this is based on the assumption that the component will likely be used for rendering, enabling the component to load instantly if and when the user requests it. The component is downloaded and cached for anticipated future use without the user making an explicit request for it.
+
+Use `prefetchComponents` to manually prefetch individual components that have been registered globally in your Nuxt app. By default Nuxt registers these as async components. You must use the Pascal-cased version of the component name.
+
+## Type Signature
+
+```ts
+function prefetchComponents(components: string | string[]): Promise<void>
+```
+
+## Parameters
+
+<ParamField path="components" type="string | string[]" required>
+  Component name(s) to prefetch. Can be a single component name string or an array of component names. Must use Pascal-case naming.
+</ParamField>
+
+## Examples
+
+### Prefetch a Single Component
+
+```ts
+await prefetchComponents('MyGlobalComponent')
+```
+
+### Prefetch Multiple Components
+
+```ts
+await prefetchComponents(['MyGlobalComponent1', 'MyGlobalComponent2'])
+```
+
+## Notes
+
+<Note>
+Current implementation behaves exactly the same as [`preloadComponents`](/api/utils/preload-components) by preloading components instead of just prefetching. We are working to improve this behavior.
+</Note>
+
+<Note>
+On server, `prefetchComponents` will have no effect.
+</Note>
+
+## See Also
+
+- [`preloadComponents`](/api/utils/preload-components)
+- [`preloadRouteComponents`](/api/utils/preload-route-components)

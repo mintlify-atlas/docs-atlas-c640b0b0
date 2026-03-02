@@ -1,0 +1,171 @@
+---
+title: Runtime Config Migration
+description: Learn how to migrate from environment variables to Nuxt 3's runtime config system.
+---
+
+If you wish to reference environment variables within your Nuxt 3 app, you will need to use runtime config.
+
+When referencing these variables within your components, you will have to use the `useRuntimeConfig` composable in your setup method (or Nuxt plugin).
+
+In the `server/` portion of your app, you can use `useRuntimeConfig` without any import.
+
+## Why Runtime Config?
+
+Runtime config provides:
+
+- **Type safety** - Full TypeScript support for your configuration
+- **Security** - Separation of public and private configuration
+- **Environment variables** - Automatic replacement at runtime
+- **Universal access** - Available in both server and client code
+
+## Migration Steps
+
+1. **Add environment variables to `runtimeConfig`** in your `nuxt.config` file
+2. **Replace `process.env` with `useRuntimeConfig`** throughout the Vue part of your app
+
+## Configuration Example
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    // Private config that is only available on the server
+    apiSecret: '123',
+    // Config within public will be also exposed to the client
+    public: {
+      apiBase: '/api',
+    },
+  },
+})
+```
+
+## Client-side Usage
+
+In your pages and components, use the `useRuntimeConfig` composable:
+
+```vue app/pages/index.vue
+<script setup lang="ts">
+const config = useRuntimeConfig()
+
+// instead of process.env you will now access config.public.apiBase
+console.log(config.public.apiBase)
+</script>
+```
+
+## Server-side Usage
+
+In server routes and API handlers, you can access both public and private config:
+
+```ts server/api/hello.ts
+export default defineEventHandler((event) => {
+  const config = useRuntimeConfig(event)
+  // In server, you can now access config.apiSecret, in addition to config.public
+  console.log(config.apiSecret)
+  console.log(config.public.apiBase)
+})
+```
+
+## Environment Variables
+
+Runtime config values are automatically replaced by matching environment variables at runtime:
+
+```ini .env
+# Runtime config values are automatically replaced by matching environment variables at runtime
+NUXT_API_SECRET=api_secret_token
+NUXT_PUBLIC_API_BASE=https://nuxtjs.org
+```
+
+### Naming Convention
+
+Environment variables follow this pattern:
+
+- Private config: `NUXT_<CONFIG_KEY>` → `runtimeConfig.configKey`
+- Public config: `NUXT_PUBLIC_<CONFIG_KEY>` → `runtimeConfig.public.configKey`
+
+Nested keys use underscores:
+
+```ini
+NUXT_PUBLIC_API_BASE_URL=https://api.example.com
+```
+
+Maps to:
+
+```ts
+runtimeConfig: {
+  public: {
+    api: {
+      baseUrl: 'https://api.example.com'
+    }
+  }
+}
+```
+
+## Before and After Comparison
+
+<CodeGroup>
+```vue Nuxt 2
+<script>
+export default {
+  data() {
+    return {
+      apiUrl: process.env.API_URL
+    }
+  },
+  async fetch() {
+    const data = await fetch(`${process.env.API_URL}/data`)
+  }
+}
+</script>
+```
+
+```vue Nuxt 3
+<script setup>
+const config = useRuntimeConfig()
+const apiUrl = config.public.apiUrl
+
+const { data } = await useFetch(`${config.public.apiUrl}/data`)
+</script>
+```
+</CodeGroup>
+
+## Type Safety
+
+You can define types for your runtime config:
+
+```ts
+declare module 'nuxt/schema' {
+  interface RuntimeConfig {
+    apiSecret: string
+  }
+  interface PublicRuntimeConfig {
+    apiBase: string
+  }
+}
+
+export {}
+```
+
+## Best Practices
+
+1. **Never expose secrets to the client** - Only use `public` for non-sensitive data
+2. **Provide defaults** - Always set default values in `nuxt.config`
+3. **Use environment variables** - Override defaults with `.env` files
+4. **Type your config** - Add TypeScript interfaces for better DX
+
+## Common Pitfalls
+
+<Warning>
+**Don't use `process.env` directly** - It won't be reactive and won't work on the client-side.
+</Warning>
+
+<Warning>
+**Don't destructure `useRuntimeConfig()`** - The config object is reactive. Always use `config.public.apiBase` instead of destructuring.
+</Warning>
+
+```ts
+// ❌ Don't do this
+const { public: { apiBase } } = useRuntimeConfig()
+
+// ✅ Do this instead
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
+```

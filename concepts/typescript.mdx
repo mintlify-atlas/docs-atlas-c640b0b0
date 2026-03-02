@@ -1,0 +1,241 @@
+---
+title: TypeScript Support
+description: Learn how Nuxt provides full TypeScript support with auto-generated types and helpful type-checking features.
+---
+
+Nuxt is fully typed and provides helpful shortcuts to ensure you have access to accurate type information when coding. TypeScript support is built-in and optimized for the best developer experience.
+
+## Auto-Generated Types
+
+Nuxt projects rely on auto-generated types to work properly. These types are stored in the `.nuxt` directory and are generated when you run the dev server or build your application.
+
+The generated `tsconfig.json` files inside the `.nuxt` directory include:
+
+- **Recommended TypeScript configuration** for your project
+- **References to auto-imports** for components and composables
+- **API route types** for type-safe server routes
+- **Path aliases** like `#imports`, `~/file`, or `#build/file`
+- **And more**
+
+You can also generate these files manually by running:
+
+```bash
+nuxt prepare
+```
+
+<Warning>
+  Nuxt relies on this configuration, and Nuxt modules can extend it as well. It's not recommended to modify your `tsconfig.json` file directly, as doing so could overwrite important settings. Instead, extend it via `nuxt.config.ts`.
+</Warning>
+
+## Type-Checking
+
+By default, Nuxt doesn't check types when you run `nuxt dev` or `nuxt build`, for performance reasons. However, you can enable type-checking in several ways.
+
+### Installing Dependencies
+
+To enable type-checking, first install `vue-tsc` and `typescript` as development dependencies:
+
+```bash
+npm install --save-dev vue-tsc typescript
+```
+
+### Running Type Checks
+
+You can run the `nuxt typecheck` command to check your types:
+
+```bash
+npx nuxt typecheck
+```
+
+This command checks your entire project for type errors without starting the dev server.
+
+### Type-Checking During Development
+
+To enable type-checking at build or development time, use the `typescript.typeCheck` option in your `nuxt.config` file:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  typescript: {
+    typeCheck: true,
+  },
+})
+```
+
+This will run type-checking in the background during development and before building for production.
+
+## Project References
+
+Nuxt uses [TypeScript project references](https://www.typescriptlang.org/docs/handbook/project-references.html) to improve type-checking performance and provide better IDE support.
+
+When you run `nuxt dev`, `nuxt build`, or `nuxt prepare`, Nuxt generates multiple `tsconfig.json` files for different parts of your application:
+
+- `.nuxt/tsconfig.app.json` - Configuration for application code within `app/` directory
+- `.nuxt/tsconfig.node.json` - Configuration for `nuxt.config.ts` and files outside other contexts
+- `.nuxt/tsconfig.server.json` - Configuration for server-side code
+- `.nuxt/tsconfig.shared.json` - For code shared between app and server contexts
+
+### Benefits
+
+- **Faster builds** - TypeScript can skip rebuilding unchanged projects
+- **Better IDE performance** - Faster IntelliSense and error checking
+- **Isolated compilation** - Errors in one part don't prevent compilation of others
+- **Clearer dependency management** - Each project explicitly declares its dependencies
+
+### Augmenting Types
+
+Since the project is divided into multiple type contexts, it's important to augment types within the correct context:
+
+- For the `app` context, place augmentation files in the `app/` directory
+- For the `server` context, place files in the `server/` directory
+- For shared types, place files in the `shared/` directory
+
+```ts app/types/custom.d.ts
+// Augment types for the app context
+declare module '#app' {
+  interface NuxtApp {
+    $myPlugin: () => void
+  }
+}
+
+export {}
+```
+
+## Strict Checks
+
+TypeScript comes with certain checks to give you more safety and analysis of your program. [Strict checks](https://www.typescriptlang.org/docs/handbook/migrating-from-javascript.html#getting-stricter-checks) are enabled by default in Nuxt when `typescript.typeCheck` is enabled.
+
+If you're currently converting your codebase to TypeScript, you may want to temporarily disable strict checks by setting `strict` to `false`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  typescript: {
+    strict: false,
+  },
+})
+```
+
+## Type-Safe API Routes
+
+When using API routes, Nuxt generates typings for these routes as long as you're returning a value instead of using `res.end()` to send a response.
+
+You can access these types when using `$fetch()` or `useFetch()`:
+
+```ts server/api/user.ts
+export default defineEventHandler(() => {
+  return {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+  }
+})
+```
+
+```vue app/app.vue
+<script setup lang="ts">
+// TypeScript knows the response type automatically
+const { data } = await useFetch('/api/user')
+// data.value.id is typed as number
+// data.value.name is typed as string
+</script>
+```
+
+This provides end-to-end type safety from your server to your client code.
+
+## Type Utilities
+
+Nuxt provides several type utilities to help you write type-safe code:
+
+### PageMeta
+
+Define metadata for your pages with full type safety:
+
+```vue pages/index.vue
+<script setup lang="ts">
+definePageMeta({
+  layout: 'default',
+  middleware: ['auth'],
+  title: 'Home Page',
+})
+</script>
+```
+
+### RouteMiddleware
+
+Define type-safe route middleware:
+
+```ts middleware/auth.ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  // to and from are fully typed
+  if (!isAuthenticated()) {
+    return navigateTo('/login')
+  }
+})
+```
+
+### Plugin Context
+
+Define type-safe plugins:
+
+```ts plugins/my-plugin.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  // nuxtApp is fully typed
+  return {
+    provide: {
+      myFunction: () => 'Hello',
+    },
+  }
+})
+```
+
+## Best Practices
+
+- **Enable type-checking** - Catch errors early in development
+- **Use auto-generated types** - Run `nuxt prepare` to generate types
+- **Leverage IntelliSense** - Your IDE will provide better autocomplete
+- **Return values from API routes** - Enable type inference
+- **Use `definePageMeta`** - Get type-safe page metadata
+- **Keep TypeScript updated** - Benefit from the latest features and improvements
+
+## Common Patterns
+
+### Type-Safe Environment Variables
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    apiSecret: '',
+    public: {
+      apiBase: '',
+    },
+  },
+})
+```
+
+```ts
+// TypeScript knows these are typed correctly
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase // string
+```
+
+### Type-Safe State
+
+```ts composables/useUser.ts
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+export const useUser = () => {
+  return useState<User | null>('user', () => null)
+}
+```
+
+```vue
+<script setup lang="ts">
+const user = useUser()
+// user.value is typed as User | null
+</script>
+```
+
+TypeScript support in Nuxt provides a seamless development experience with full type safety, powerful IntelliSense, and excellent error checking.

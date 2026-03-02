@@ -1,0 +1,28 @@
+---
+title: useAppConfig
+description: Access the reactive app config defined in the project.
+---
+
+## Usage
+
+```ts
+const appConfig = useAppConfig()
+
+console.log(appConfig)
+```
+
+## Parameters
+
+This composable does not take any parameters.
+
+## Return Values
+
+<ResponseField name="appConfig" type="AppConfig">
+  A reactive object containing the app configuration defined in `app.config.ts`. The config is reactive and will update automatically when changed.
+</ResponseField>
+
+## Type
+
+```ts
+export function useAppConfig(): AppConfig
+```

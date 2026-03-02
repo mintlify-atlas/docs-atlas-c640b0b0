@@ -1,0 +1,350 @@
+---
+title: Styling Options
+description: Learn how to style your Nuxt application with CSS, preprocessors, frameworks, and modern styling solutions.
+---
+
+Nuxt offers flexible styling options. You can write your own styles, use CSS preprocessors, integrate UI frameworks, or leverage modern CSS-in-JS solutions.
+
+## Local Stylesheets
+
+Place your local stylesheets in the `app/assets/` directory for optimal organization and build tool processing.
+
+### Importing in Components
+
+You can import stylesheets directly in your pages, layouts, and components using JavaScript imports or CSS `@import` statements.
+
+<CodeGroup>
+```vue app/pages/index.vue
+<script>
+// Use a static import for server-side compatibility
+import '~/assets/css/first.css'
+
+// Caution: Dynamic imports are not server-side compatible
+import('~/assets/css/first.css')
+</script>
+
+<style>
+@import url("~/assets/css/second.css");
+</style>
+```
+</CodeGroup>
+
+<Tip>
+Nuxt inlines these stylesheets in the rendered HTML automatically.
+</Tip>
+
+### Global CSS with the CSS Property
+
+Use the `css` property in your Nuxt configuration to include stylesheets across all pages of your application.
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  css: ['~/assets/css/main.css'],
+})
+```
+</CodeGroup>
+
+Stylesheets added this way are:
+- Inlined in the HTML rendered by Nuxt
+- Injected globally
+- Present on all pages
+
+### Working with Fonts
+
+Place local font files in your `public/` directory (e.g., `public/fonts/`) and reference them in stylesheets using `url()`.
+
+<CodeGroup>
+```css assets/css/main.css
+@font-face {
+  font-family: 'FarAwayGalaxy';
+  src: url('/fonts/FarAwayGalaxy.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+```vue app/components/Header.vue
+<style>
+h1 {
+  font-family: 'FarAwayGalaxy', sans-serif;
+}
+</style>
+```
+</CodeGroup>
+
+### NPM Stylesheets
+
+You can reference stylesheets distributed through npm. Here's an example using the `animate.css` library:
+
+<CodeGroup>
+```bash npm
+npm install animate.css
+```
+
+```bash pnpm
+pnpm install animate.css
+```
+
+```bash yarn
+yarn add animate.css
+```
+</CodeGroup>
+
+Then import it in your components:
+
+<CodeGroup>
+```vue app/app.vue
+<script>
+import 'animate.css'
+</script>
+
+<style>
+@import url("animate.css");
+</style>
+```
+</CodeGroup>
+
+Or add it to your Nuxt configuration:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  css: ['animate.css'],
+})
+```
+</CodeGroup>
+
+## External Stylesheets
+
+Include external stylesheets by adding a link element in the head section using the `app.head` property:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    head: {
+      link: [{ rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css' }],
+    },
+  },
+})
+```
+</CodeGroup>
+
+### Dynamic Stylesheets
+
+Use the `useHead` composable to dynamically add stylesheets in your code:
+
+<CodeGroup>
+```ts
+useHead({
+  link: [{ rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css' }],
+})
+```
+</CodeGroup>
+
+<Warning>
+External stylesheets are render-blocking resources. They must load and process before the browser renders the page, which can impact performance.
+</Warning>
+
+## CSS Preprocessors
+
+Install your preferred preprocessor to use Sass, SCSS, Less, or Stylus:
+
+<CodeGroup>
+```bash Sass & SCSS
+npm install -D sass
+```
+
+```bash Less
+npm install -D less
+```
+
+```bash Stylus
+npm install -D stylus
+```
+</CodeGroup>
+
+Then use the `lang` attribute in your component styles or import files in your configuration:
+
+<CodeGroup>
+```vue app/pages/app.vue
+<style lang="scss">
+@use "~/assets/scss/main.scss";
+</style>
+```
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  css: ['~/assets/scss/main.scss'],
+})
+```
+</CodeGroup>
+
+### Preprocessor Options
+
+Inject code into preprocessed files (like Sass partials) using Vite's preprocessor options:
+
+<CodeGroup>
+```scss assets/_colors.scss
+$primary: #49240F;
+$secondary: #E4A79D;
+```
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  vite: {
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: '@use "~/assets/_colors.scss" as *;',
+        },
+      },
+    },
+  },
+})
+```
+</CodeGroup>
+
+## Single File Component Styling
+
+Vue SFCs provide excellent built-in styling capabilities without requiring CSS-in-JS solutions.
+
+### Dynamic Styles with v-bind
+
+Reference JavaScript variables in your style blocks using the `v-bind` function:
+
+<CodeGroup>
+```vue
+<script setup lang="ts">
+const color = ref('red')
+</script>
+
+<template>
+  <div class="text">hello</div>
+</template>
+
+<style>
+.text {
+  color: v-bind(color);
+}
+</style>
+```
+</CodeGroup>
+
+### Scoped Styles
+
+Use the `scoped` attribute to style components in isolation:
+
+<CodeGroup>
+```vue
+<template>
+  <div class="example">hi</div>
+</template>
+
+<style scoped>
+.example {
+  color: red;
+}
+</style>
+```
+</CodeGroup>
+
+### CSS Modules
+
+Access CSS Modules with the `module` attribute and the injected `$style` variable:
+
+<CodeGroup>
+```vue
+<template>
+  <p :class="$style.red">
+    This should be red
+  </p>
+</template>
+
+<style module>
+.red {
+  color: red;
+}
+</style>
+```
+</CodeGroup>
+
+## PostCSS
+
+Nuxt comes with PostCSS built-in. Configure it in your `nuxt.config` file:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  postcss: {
+    plugins: {
+      'postcss-nested': {},
+      'postcss-custom-media': {},
+    },
+  },
+})
+```
+</CodeGroup>
+
+Nuxt includes these PostCSS plugins by default:
+- **postcss-import**: Improves the `@import` rule
+- **postcss-url**: Transforms `url()` statements
+- **autoprefixer**: Automatically adds vendor prefixes
+- **cssnano**: Minification and purge
+
+## CSS Frameworks and Libraries
+
+Nuxt supports popular styling libraries through dedicated modules:
+
+- **UnoCSS**: Instant on-demand atomic CSS engine
+- **Tailwind CSS**: Utility-first CSS framework
+- **Nuxt UI**: A UI Library for Modern Web Apps
+- **Panda CSS**: CSS-in-JS engine with build-time atomic CSS
+
+Explore available modules in the [Nuxt modules directory](/modules/introduction).
+
+### Loading Web Fonts
+
+Use the Nuxt Google Fonts module to easily load Google Fonts, or leverage UnoCSS's web fonts preset for broader provider support.
+
+## Performance Optimization
+
+### LCP Optimizations
+
+Speed up global CSS file downloads:
+
+1. Use a CDN for files physically closer to users
+2. Compress assets with Brotli
+3. Use HTTP2/HTTP3 for delivery
+4. Host assets on the same domain
+
+Modern platforms like Cloudflare, Netlify, and Vercel handle these optimizations automatically.
+
+### Inline-Only CSS
+
+If all your CSS is inlined by Nuxt, you can prevent external CSS file references:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  hooks: {
+    'build:manifest': (manifest) => {
+      const css = Object.values(manifest).find(options => options.isEntry)?.css
+      if (css) {
+        for (let i = css.length - 1; i >= 0; i--) {
+          if (css[i].startsWith('entry')) {
+            css.splice(i, 1)
+          }
+        }
+      }
+    },
+  },
+})
+```
+</CodeGroup>
+
+<Tip>
+Take advantage of the tools and techniques available in the web ecosystem to make styling your application easier and more efficient. Whether you're using native CSS, a preprocessor, PostCSS, a UI library, or a module, Nuxt has you covered.
+</Tip>

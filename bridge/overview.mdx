@@ -1,0 +1,188 @@
+---
+title: Bridge Overview
+description: Reduce the differences with Nuxt 3 and reduce the burden of migration by using Nuxt Bridge.
+---
+
+<Note>
+If you're starting a fresh Nuxt 3 project, please skip this section and go to Nuxt 3 Installation.
+</Note>
+
+<Warning>
+Nuxt Bridge provides identical features to Nuxt 3 but there are some limitations, notably that `useAsyncData` and `useFetch` composables are not available. Please read the rest of this page for details.
+</Warning>
+
+Bridge is a forward-compatibility layer that allows you to experience many of the new Nuxt 3 features by simply installing and enabling a Nuxt module.
+
+Using Nuxt Bridge, you can make sure your project is (almost) ready for Nuxt 3 and you can gradually proceed with the transition to Nuxt 3.
+
+## What is Nuxt Bridge?
+
+Nuxt Bridge is a compatibility layer that:
+
+- Brings Nuxt 3 features to Nuxt 2
+- Allows gradual migration to Nuxt 3
+- Reduces migration burden
+- Tests compatibility with minimal changes
+
+## First Step
+
+### Upgrade Nuxt 2
+
+Make sure your dev server (`nuxt dev`) isn't running, remove any package lock files (`package-lock.json` and `yarn.lock`), and install the latest Nuxt 2 version:
+
+```diff package.json
+- "nuxt": "^2.16.3"
++ "nuxt": "^2.17.3"
+```
+
+Then, reinstall your dependencies:
+
+<CodeGroup>
+```bash npm
+npm install
+```
+
+```bash yarn
+yarn install
+```
+
+```bash pnpm
+pnpm install
+```
+
+```bash bun
+bun install
+```
+</CodeGroup>
+
+<Note>
+Once the installation is complete, make sure both development and production builds are working as expected before proceeding.
+</Note>
+
+### Install Nuxt Bridge
+
+Install `@nuxt/bridge` and `nuxi` as development dependencies:
+
+<CodeGroup>
+```bash npm
+npm install -D @nuxt/bridge nuxi
+```
+
+```bash yarn
+yarn add --dev @nuxt/bridge nuxi
+```
+
+```bash pnpm
+pnpm add -D @nuxt/bridge nuxi
+```
+
+```bash bun
+bun add -D @nuxt/bridge nuxi
+```
+</CodeGroup>
+
+### Update nuxt.config
+
+Please make sure to avoid any CommonJS syntax such as `module.exports`, `require` or `require.resolve` in your config file. It will soon be deprecated and unsupported.
+
+You can use static `import`, dynamic `import()` and `export default` instead. Using TypeScript by renaming to `nuxt.config.ts` is also possible and recommended.
+
+```ts nuxt.config.ts
+import { defineNuxtConfig } from '@nuxt/bridge'
+
+export default defineNuxtConfig({
+  bridge: false,
+})
+```
+
+### Update Commands
+
+The `nuxt` command should now be changed to the `nuxt2` command.
+
+```diff package.json
+{
+  "scripts": {
+-   "dev": "nuxt",
++   "dev": "nuxt2",
+-   "build": "nuxt build",
++   "build": "nuxt2 build",
+-   "start": "nuxt start",
++   "start": "nuxt2 start"
+  }
+}
+```
+
+Try running `nuxt2` once here. You will see that the application works as before.
+
+<Note>
+If 'bridge' is set to false, your application will operate without any changes as before.
+</Note>
+
+## Upgrade Steps
+
+With Nuxt Bridge, the migration to Nuxt 3 can proceed in steps. The below upgrade steps do not need to be done all at once.
+
+### Migration Path
+
+1. [TypeScript](/bridge/typescript) - Enable TypeScript support
+2. [Migrate Legacy Composition API](/bridge/composition-api) - Update Composition API usage
+3. Plugins and Middleware - Modernize plugins and middleware
+4. Migrate New Composition API - Use Nuxt 3-compatible composables
+5. Meta Tags - Update meta tag management
+6. Runtime Config - Migrate to runtime config
+7. Nitro - Enable Nitro server engine
+8. Vite - Switch to Vite bundler
+9. [Configuration](/bridge/configuration) - Fine-tune Bridge configuration
+
+## Migrate from CommonJS to ESM
+
+Nuxt 3 natively supports TypeScript and ECMAScript Modules. Please check the Native ES Modules documentation for more info and upgrading.
+
+## Benefits of Using Bridge
+
+### Gradual Migration
+
+You can enable Bridge features one at a time, allowing you to:
+
+- Test each feature independently
+- Fix issues incrementally
+- Keep your app working during migration
+- Reduce risk of breaking changes
+
+### Modern Features
+
+Bridge brings many Nuxt 3 features:
+
+- Composition API support
+- Auto-imports
+- Nitro server engine
+- Vite bundler support
+- TypeScript improvements
+- New composables (with some limitations)
+
+### Reduced Migration Burden
+
+By using Bridge, you can:
+
+- Identify compatibility issues early
+- Migrate at your own pace
+- Keep your codebase stable
+- Prepare for Nuxt 3 without a full rewrite
+
+## Limitations
+
+<Warning>
+While Bridge provides many Nuxt 3 features, there are some limitations:
+
+- `useAsyncData` and `useFetch` composables are not available
+- Some Nuxt 3 features may have different behavior
+- Module compatibility varies
+</Warning>
+
+## Next Steps
+
+Once you have Bridge installed, follow the upgrade steps to gradually enable Nuxt 3 features:
+
+1. Start with [TypeScript setup](/bridge/typescript)
+2. Migrate your [Composition API usage](/bridge/composition-api)
+3. Update your [configuration](/bridge/configuration) as needed

@@ -1,0 +1,42 @@
+---
+title: useRequestEvent
+description: Access the incoming request event with the useRequestEvent composable.
+---
+
+Within the Nuxt context you can use `useRequestEvent` to access the incoming request.
+
+```ts
+// Get underlying request event
+const event = useRequestEvent()
+
+// Get the URL
+const url = event?.path
+```
+
+<Tip>
+  In the browser, `useRequestEvent` will return `undefined`.
+</Tip>
+
+## Parameters
+
+This composable does not take any parameters.
+
+## Return Values
+
+<ResponseField name="event" type="H3Event | undefined">
+  The h3 event object for the current request. Returns `undefined` on the client side.
+
+  <ResponseField name="path" type="string">
+    The URL path of the request.
+  </ResponseField>
+
+  <ResponseField name="node" type="object">
+    Node.js request and response objects.
+  </ResponseField>
+</ResponseField>
+
+## Type
+
+```ts
+export function useRequestEvent(): H3Event | undefined
+```

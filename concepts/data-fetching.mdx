@@ -1,0 +1,229 @@
+---
+title: Data Fetching with Composables
+description: Learn how to fetch data in Nuxt using useFetch, useAsyncData, and $fetch composables.
+---
+
+Nuxt provides composables to handle data fetching within your application, both in browser and server environments: `useFetch`, `useAsyncData`, and `$fetch`.
+
+## Overview
+
+In a nutshell:
+
+- `$fetch` is the simplest way to make a network request
+- `useFetch` is a wrapper around `$fetch` that fetches data only once in universal rendering
+- `useAsyncData` is similar to `useFetch` but offers more fine-grained control
+
+Both `useFetch` and `useAsyncData` share a common set of options and patterns.
+
+## Why useFetch and useAsyncData?
+
+Nuxt is a framework that can run isomorphic (or universal) code in both server and client environments. If the `$fetch` function is used to perform data fetching in the setup function of a Vue component, this may cause data to be fetched twice: once on the server (to render the HTML) and once again on the client (when the HTML is hydrated).
+
+The `useFetch` and `useAsyncData` composables solve this problem by ensuring that if an API call is made on the server, the data is forwarded to the client in the payload.
+
+The payload is a JavaScript object accessible through `useNuxtApp().payload`. It's used on the client to avoid refetching the same data when the code is executed in the browser during hydration.
+
+```vue app/app.vue
+<script setup lang="ts">
+const { data } = await useFetch('/api/data')
+
+async function handleFormSubmit () {
+  const res = await $fetch('/api/submit', {
+    method: 'POST',
+    body: {
+      // My form data
+    },
+  })
+}
+</script>
+
+<template>
+  <div v-if="data == undefined">
+    No data
+  </div>
+  <div v-else>
+    <form @submit="handleFormSubmit">
+      <!-- form input tags -->
+    </form>
+  </div>
+</template>
+```
+
+In the example above, `useFetch` ensures that the request occurs on the server and is properly forwarded to the browser. `$fetch` has no such mechanism and is better suited for requests made solely from the browser.
+
+## Using $fetch
+
+Nuxt includes the [ofetch](https://github.com/unjs/ofetch) library, auto-imported as the `$fetch` alias globally across your application.
+
+```vue pages/todos.vue
+<script setup lang="ts">
+async function addTodo () {
+  const todo = await $fetch('/api/todos', {
+    method: 'POST',
+    body: {
+      // My todo data
+    },
+  })
+}
+</script>
+```
+
+<Warning>
+  Using only `$fetch` will not provide network calls de-duplication and navigation prevention. It's recommended to use `$fetch` for client-side interactions (event-based) or combined with `useAsyncData` when fetching the initial component data.
+</Warning>
+
+## Using useFetch
+
+The `useFetch` composable uses `$fetch` under the hood to make SSR-safe network calls in the setup function.
+
+```vue app/app.vue
+<script setup lang="ts">
+const { data: count } = await useFetch('/api/count')
+</script>
+
+<template>
+  <p>Page visits: {{ count }}</p>
+</template>
+```
+
+This composable is a wrapper around the `useAsyncData` composable and `$fetch` utility, providing a convenient way to fetch data with automatic SSR handling.
+
+## Using useAsyncData
+
+The `useAsyncData` composable is responsible for wrapping async logic and returning the result once it's resolved.
+
+<Tip>
+  `useFetch(url)` is nearly equivalent to `useAsyncData(url, () => $fetch(url))`. It's developer experience sugar for the most common use case.
+</Tip>
+
+There are cases when using `useFetch` is not appropriate, for example when a CMS or third-party provides their own query layer. In this case, you can use `useAsyncData` to wrap your calls.
+
+```vue app/pages/users.vue
+<script setup lang="ts">
+const { data, error } = await useAsyncData('users', () => myGetFunction('users'))
+
+// This is also possible:
+const { data, error } = await useAsyncData(() => myGetFunction('users'))
+</script>
+```
+
+<Note>
+  The first argument of `useAsyncData` is a unique key used to cache the response of the second argument. This key can be ignored by directly passing the querying function, and the key will be auto-generated. Setting a key can be useful to share the same data between components or to refresh specific data.
+</Note>
+
+### Handling Multiple Requests
+
+The `useAsyncData` composable is a great way to wrap and wait for multiple `$fetch` requests to be completed, and then process the results.
+
+```vue
+<script setup lang="ts">
+const { data: discounts, status } = await useAsyncData('cart-discount', async () => {
+  const [coupons, offers] = await Promise.all([
+    $fetch('/cart/coupons'),
+    $fetch('/cart/offers'),
+  ])
+
+  return { coupons, offers }
+})
+// discounts.value.coupons
+// discounts.value.offers
+</script>
+```
+
+## Return Values
+
+`useFetch` and `useAsyncData` have the same return values:
+
+- `data` - The result of the asynchronous function that is passed in
+- `refresh`/`execute` - A function that can be used to refresh the data returned by the handler function
+- `clear` - A function to set `data` to `undefined`, set `error` to `undefined`, set `status` to `idle`, and mark any pending requests as cancelled
+- `error` - An error object if the data fetching failed
+- `status` - A string indicating the status of the data request (`"idle"`, `"pending"`, `"success"`, `"error"`)
+
+<Note>
+  `data`, `error`, and `status` are Vue refs accessible with `.value` in `<script setup>`.
+</Note>
+
+## Common Options
+
+### Lazy Fetching
+
+By default, data fetching composables wait for the resolution of their asynchronous function before navigating to a new page. You can ignore this behavior on client-side navigation with the `lazy` option.
+
+```vue app/app.vue
+<script setup lang="ts">
+const { status, data: posts } = useFetch('/api/posts', {
+  lazy: true,
+})
+</script>
+
+<template>
+  <!-- you will need to handle a loading state -->
+  <div v-if="status === 'pending'">
+    Loading ...
+  </div>
+  <div v-else>
+    <div v-for="post in posts">
+      <!-- do something -->
+    </div>
+  </div>
+</template>
+```
+
+You can alternatively use `useLazyFetch` and `useLazyAsyncData` as convenient methods to perform the same.
+
+### Client-Only Fetching
+
+By default, data fetching composables perform their asynchronous function on both client and server environments. Set the `server` option to `false` to only perform the call on the client-side.
+
+```ts
+/* This call is performed before hydration */
+const articles = await useFetch('/api/article')
+
+/* This call will only be performed on the client */
+const { status, data: comments } = useFetch('/api/comments', {
+  lazy: true,
+  server: false,
+})
+```
+
+### Caching and Refetching
+
+`useFetch` and `useAsyncData` use keys to prevent refetching the same data:
+
+- `useFetch` uses the provided URL as a key. Alternatively, a `key` value can be provided in the options object
+- `useAsyncData` uses its first argument as a key if it's a string
+
+You can use the `watch` option to re-run your fetching function each time other reactive values change:
+
+```vue
+<script setup lang="ts">
+const id = ref(1)
+
+const { data, error, refresh } = await useFetch('/api/users', {
+  /* Changing the id will trigger a refetch */
+  watch: [id],
+})
+</script>
+```
+
+### Computed URL
+
+You can compute a URL from reactive values, and Nuxt will automatically use the reactive value and re-fetch each time it changes.
+
+```vue
+<script setup lang="ts">
+const id = ref(null)
+
+const { data, status } = useLazyFetch(() => `/api/users/${id.value}`, {
+  immediate: false,
+})
+</script>
+```
+
+## Best Practices
+
+- Use `useFetch` for fetching data in component setup
+- Use `$fetch` for event handlers and client-side operations
+- Use `useAsyncData` when you need fine-grained control or are wrapping custom fetching logic
+- Always handle loading and error states in your templates

@@ -1,0 +1,67 @@
+---
+title: 'Directory Structure Overview'
+description: 'Learn about the directory structure of a Nuxt application and how to organize your code effectively.'
+---
+
+Nuxt applications have a specific directory structure designed to be easy to understand and use consistently.
+
+## Root Directory
+
+The root directory of a Nuxt application contains the `nuxt.config.ts` file. This file is used to configure your Nuxt application.
+
+## App Directory
+
+The `app/` directory is the main directory of your Nuxt application. It contains the following subdirectories:
+
+- [`assets/`](/guide/assets): Website assets that the build tool (Vite or webpack) will process
+- [`components/`](/directory-structure/components): Vue components of your application
+- [`composables/`](/directory-structure/composables): Vue composables for your application logic
+- [`layouts/`](/directory-structure/layouts): Vue components that wrap around your pages and avoid re-rendering between pages
+- [`middleware/`](/directory-structure/middleware): Code to run before navigating to a particular route
+- [`pages/`](/directory-structure/pages): File-based routing to create routes within your web application
+- [`plugins/`](/directory-structure/plugins): Vue plugins and more at the creation of your Nuxt application
+- [`utils/`](#): Functions available throughout your application in components, composables, and pages
+
+This directory also includes specific files:
+
+- [`app.config.ts`](#): Reactive configuration within your application
+- [`app.vue`](/directory-structure/app): The root component of your Nuxt application
+- [`error.vue`](/directory-structure/app/error): The error page of your Nuxt application
+
+## Public Directory
+
+The [`public/`](/directory-structure/public) directory contains public files served at the root. Files here are not modified by the build process.
+
+This is suitable for files that need to keep their names (e.g., `robots.txt`) or likely won't change (e.g., `favicon.ico`).
+
+## Server Directory
+
+The [`server/`](/directory-structure/server) directory contains the server-side code of your Nuxt application. It includes:
+
+- [`api/`](/directory-structure/server#server-routes): API routes of your application
+- [`routes/`](/directory-structure/server#server-routes): Server routes (e.g., dynamic `/sitemap.xml`)
+- [`middleware/`](/directory-structure/server#server-middleware): Code to run before a server route is processed
+- [`plugins/`](/directory-structure/server#server-plugins): Plugins at the creation of the Nuxt server
+- [`utils/`](/directory-structure/server#server-utilities): Functions for your server code
+
+## Shared Directory
+
+The [`shared/`](#) directory contains code shared between your Nuxt application and Nuxt server. This code can be used in both the Vue app and the Nitro server.
+
+## Content Directory
+
+The [`content/`](/directory-structure/content) directory is enabled by the [Nuxt Content](https://content.nuxt.com) module. It creates a file-based CMS using Markdown files.
+
+## Modules Directory
+
+The [`modules/`](/directory-structure/modules) directory contains local modules of your Nuxt application. Modules extend the functionality of your Nuxt application.
+
+## Layers Directory
+
+The [`layers/`](/guide/layers) directory allows you to organize and share reusable code, components, composables, and configurations. Layers within this directory are automatically registered in your project.
+
+## Nuxt Files
+
+- [`nuxt.config.ts`](/directory-structure/nuxt-config): Main configuration file for your Nuxt application
+- [`.nuxtrc`](#): Configuration syntax for global configurations
+- [`.nuxtignore`](#): Files to ignore in the root directory during the build phase

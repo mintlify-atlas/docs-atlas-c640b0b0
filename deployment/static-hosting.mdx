@@ -1,0 +1,352 @@
+---
+title: Static Hosting
+description: Deploy your Nuxt application to static hosting services using pre-rendering or static site generation (SSG).
+---
+
+Static hosting allows you to deploy your Nuxt application to any static file hosting service without requiring a Node.js server. Nuxt offers two approaches to static hosting.
+
+## Static Site Generation (SSG)
+
+Static site generation with `ssr: true` pre-renders routes of your application at build time. This is the default behavior when running `nuxt generate`.
+
+### Benefits of SSG
+
+<CardGroup cols={2}>
+  <Card title="SEO Optimized" icon="search">
+    Fully rendered HTML pages are immediately available to search engines
+  </Card>
+  <Card title="Fast Loading" icon="bolt">
+    No server processing required, instant page loads from CDN
+  </Card>
+  <Card title="Cost Effective" icon="dollar-sign">
+    Deploy to free or low-cost static hosting services
+  </Card>
+  <Card title="Scalable" icon="chart-line">
+    CDN distribution handles any traffic volume
+  </Card>
+</CardGroup>
+
+### Generate Your Site
+
+<Steps>
+  <Step title="Run the generate command">
+    Use the `nuxt generate` command to build and pre-render your application:
+
+    <CodeGroup>
+      ```bash npm
+      npx nuxt generate
+      ```
+
+      ```bash yarn
+      yarn nuxt generate
+      ```
+
+      ```bash pnpm
+      pnpm nuxt generate
+      ```
+
+      ```bash bun
+      bun x nuxt generate
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Review the output">
+    The generated files will be in the `.output/public` directory:
+
+    ```
+    .output/public/
+    ├── index.html
+    ├── about.html
+    ├── _nuxt/              # JavaScript and CSS bundles
+    ├── _payload.json       # Serialized data for client-side navigation
+    └── 200.html            # SPA fallback for dynamic routes
+    └── 404.html            # Error page
+    ```
+  </Step>
+
+  <Step title="Test locally">
+    Preview your static site locally before deployment:
+
+    ```bash
+    npx serve .output/public
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    Upload the `.output/public` directory to your static hosting provider.
+  </Step>
+</Steps>
+
+### SSG Configuration
+
+Configure SSG behavior in your `nuxt.config.ts`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  ssr: true, // Enable server-side rendering for pre-rendering
+  
+  nitro: {
+    prerender: {
+      // Crawl all linked pages
+      crawlLinks: true,
+      // Explicitly add routes
+      routes: ['/sitemap.xml', '/robots.txt'],
+      // Ignore specific routes
+      ignore: ['/admin', '/private'],
+    },
+  },
+})
+```
+
+## Fallback Pages
+
+Nuxt generates fallback pages for static hosting:
+
+### 200.html (SPA Fallback)
+
+The `/200.html` file serves as a single-page app fallback for dynamic routes that weren't pre-rendered. Configure your static host to serve this file for unknown routes.
+
+<CodeGroup>
+  ```json Netlify (_redirects)
+  /*    /200.html   200
+  ```
+
+  ```json Vercel (vercel.json)
+  {
+    "routes": [
+      { "handle": "filesystem" },
+      { "src": "/(.*)", "dest": "/200.html" }
+    ]
+  }
+  ```
+
+  ```apache Apache (.htaccess)
+  <IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    RewriteRule ^200\.html$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /200.html [L]
+  </IfModule>
+  ```
+</CodeGroup>
+
+### 404.html (Error Page)
+
+The `/404.html` file is served when a route doesn't exist. Most static hosts serve this automatically.
+
+<Note>
+  You may need to configure your static hosting provider to properly serve these fallback pages. Check your provider's documentation for SPA configuration.
+</Note>
+
+## Client-Side Only Rendering
+
+If you don't want to pre-render your routes, you can create a static single-page application (SPA) by setting `ssr` to `false`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  ssr: false,
+})
+```
+
+This will output an `.output/public/index.html` entrypoint and JavaScript bundles like a classic client-side Vue.js application.
+
+<Warning>
+  You will lose many SEO benefits by disabling SSR. Instead, consider using `<ClientOnly>` components to wrap portions of your site that cannot be server-rendered.
+</Warning>
+
+### When to Use SPA Mode
+
+Use client-side only rendering when:
+- Your app is behind authentication
+- You're building an admin dashboard or internal tool
+- SEO is not a concern
+- You need to minimize build time
+
+## Popular Static Hosting Providers
+
+Deploy your static Nuxt site to these popular providers:
+
+<Tabs>
+  <Tab title="Netlify">
+    ### Deploy to Netlify
+
+    Netlify provides zero-config deployment for Nuxt:
+
+    1. Connect your Git repository
+    2. Netlify auto-detects Nuxt and configures build settings
+    3. Build command: `npm run generate`
+    4. Publish directory: `.output/public`
+
+    **netlify.toml**:
+    ```toml
+    [build]
+      command = "npm run generate"
+      publish = ".output/public"
+
+    [[redirects]]
+      from = "/*"
+      to = "/200.html"
+      status = 200
+    ```
+  </Tab>
+
+  <Tab title="Vercel">
+    ### Deploy to Vercel
+
+    Vercel has built-in Nuxt support:
+
+    1. Import your project from Git
+    2. Vercel auto-detects Nuxt
+    3. Click "Deploy"
+
+    **vercel.json**:
+    ```json
+    {
+      "buildCommand": "npm run generate",
+      "outputDirectory": ".output/public",
+      "routes": [
+        { "handle": "filesystem" },
+        { "src": "/(.*)", "dest": "/200.html" }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Cloudflare Pages">
+    ### Deploy to Cloudflare Pages
+
+    Deploy to Cloudflare's global CDN:
+
+    1. Connect your Git repository
+    2. Build command: `npm run generate`
+    3. Build output directory: `.output/public`
+
+    **Redirects** (_redirects):
+    ```
+    /*    /200.html   200
+    ```
+  </Tab>
+
+  <Tab title="GitHub Pages">
+    ### Deploy to GitHub Pages
+
+    Deploy to GitHub Pages with GitHub Actions:
+
+    **.github/workflows/deploy.yml**:
+    ```yaml
+    name: Deploy to GitHub Pages
+
+    on:
+      push:
+        branches: [main]
+
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions/setup-node@v3
+            with:
+              node-version: 18
+          - run: npm ci
+          - run: npm run generate
+          - uses: peaceiris/actions-gh-pages@v3
+            with:
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              publish_dir: ./.output/public
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Configuration
+
+### Custom Base URL
+
+If your site is deployed to a subdirectory, configure the base URL:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  app: {
+    baseURL: '/my-app/',
+    cdnURL: 'https://cdn.example.com',
+  },
+})
+```
+
+### Asset Optimization
+
+Optimize static assets for better performance:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    compressPublicAssets: true,
+  },
+  
+  vite: {
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['vue', 'vue-router'],
+          },
+        },
+      },
+    },
+  },
+})
+```
+
+### Cache Headers
+
+Configure cache headers for different file types:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/_nuxt/**': { headers: { 'cache-control': 'max-age=31536000' } },
+    '/images/**': { headers: { 'cache-control': 'max-age=86400' } },
+  },
+})
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="404 errors on refresh">
+    Your static host needs to be configured to serve `/200.html` for unknown routes. Check your provider's SPA configuration.
+  </Accordion>
+
+  <Accordion title="Missing pages after generation">
+    Ensure pages are discoverable:
+    - Link to them from other pages
+    - Add them to `nitro.prerender.routes`
+    - Use the `prerenderRoutes()` function
+  </Accordion>
+
+  <Accordion title="API calls failing">
+    Static sites cannot make server API calls. Use:
+    - External APIs
+    - Serverless functions
+    - Pre-fetch data during build with `useAsyncData`
+  </Accordion>
+
+  <Accordion title="Environment variables not working">
+    Client-side apps can't access server environment variables. Use `runtimeConfig.public` for client-accessible values.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Prerendering" icon="zap" href="/deployment/prerendering">
+    Learn advanced prerendering techniques
+  </Card>
+  <Card title="Node.js Server" icon="server" href="/deployment/node-server">
+    Deploy with full SSR capabilities
+  </Card>
+</CardGroup>

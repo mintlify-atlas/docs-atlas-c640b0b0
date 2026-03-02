@@ -1,0 +1,228 @@
+---
+title: Layers Feature
+description: Extend your Nuxt application with the powerful layers system to share components, utilities, and configuration across projects.
+---
+
+Nuxt's layers system allows you to extend applications to reuse components, utilities, and configuration. The layers structure mirrors a standard Nuxt application, making them easy to author and maintain.
+
+## Use Cases
+
+Leverage layers for:
+
+- **Configuration presets**: Share reusable `nuxt.config` and `app.config` across projects
+- **Component libraries**: Create shareable component libraries using the `app/components/` directory
+- **Utility libraries**: Build composable and utility libraries using `app/composables/` and `app/utils/`
+- **Module presets**: Create Nuxt module presets
+- **Standard setups**: Share common configurations across projects
+- **Nuxt themes**: Create and distribute Nuxt themes
+- **Modular architecture**: Implement Domain-Driven Design (DDD) patterns in large-scale projects
+
+## Usage
+
+### Auto-Registration
+
+Nuxt automatically registers any layers within your project in the `~~/layers` directory:
+
+<CodeGroup>
+```bash Directory structure
+layers/
+  1.base/
+    app/components/Button.vue
+  2.theme/
+    app/components/Header.vue
+app/
+  components/Footer.vue
+```
+</CodeGroup>
+
+<Note>
+Layer auto-registration was introduced in Nuxt v3.12.0.
+</Note>
+
+Nuxt automatically creates named layer aliases to the `srcDir` of each layer. For example, you can access the `~~/layers/test` layer via `#layers/test`.
+
+<Note>
+Named layer aliases were introduced in Nuxt v3.16.0.
+</Note>
+
+### Extending from Layers
+
+Extend from a layer by adding the `extends` property to your `nuxt.config` file:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    // Extend from a local layer
+    '../base',
+    // Extend from an installed npm package
+    '@my-themes/awesome',
+    // Extend from a git repository
+    'github:my-themes/awesome#v1',
+  ],
+})
+```
+</CodeGroup>
+
+### Private Repository Authentication
+
+Pass an authentication token for private GitHub repositories:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    ['github:my-themes/private-awesome', { auth: process.env.GITHUB_TOKEN }],
+  ],
+})
+```
+</CodeGroup>
+
+<Note>
+If you don't specify a branch, Nuxt clones the `main` branch by default.
+</Note>
+
+### Custom Layer Aliases
+
+Override a layer's alias by specifying it in the options:
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    [
+      'github:my-themes/awesome',
+      {
+        meta: {
+          name: 'my-awesome-theme',
+        },
+      },
+    ],
+  ],
+})
+```
+</CodeGroup>
+
+## Layer Priority
+
+Understand the override order when using multiple layers. Layers with **higher priority** override layers with lower priority.
+
+### Priority Order
+
+From highest to lowest priority:
+
+1. **Your project files** - Always have the highest priority
+2. **Auto-scanned layers** from `~~/layers` directory - Sorted alphabetically (Z > A)
+3. **Layers in `extends`** config - First entry has higher priority than second
+
+### Priority Example
+
+Consider multiple layers defining the same component:
+
+<CodeGroup>
+```bash Directory structure
+layers/
+  1.base/
+    app/components/Button.vue    # Base button style
+  2.theme/
+    app/components/Button.vue    # Themed button (overrides base)
+app/
+  components/Button.vue          # Project button (overrides all layers)
+```
+</CodeGroup>
+
+In this case:
+- If only layers exist, `2.theme/Button.vue` is used (higher alphabetically)
+- If `app/components/Button.vue` exists in your project, it overrides all layers
+
+### Controlling Priority
+
+Prefix layer directories with numbers to control the order:
+
+<CodeGroup>
+```bash Directory structure
+layers/
+  1.base/        # Lowest priority
+  2.features/    # Medium priority
+  3.admin/       # Highest priority (among layers)
+```
+</CodeGroup>
+
+<Tip>
+This pattern is useful for creating base layers with defaults that can be progressively overridden by more specific layers.
+</Tip>
+
+### When to Use Each Method
+
+- **`~~/layers` directory**: Use for local layers that are part of your project
+- **`extends`**: Use for external dependencies (npm packages, remote repositories) or layers outside your project directory
+
+### Full Priority Example
+
+<CodeGroup>
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    '../base',                    // Local layer outside project
+    '@my-themes/awesome',         // NPM package
+    'github:my-themes/awesome#v1', // Remote repository
+  ],
+})
+```
+</CodeGroup>
+
+With `~~/layers/custom` in your project, the priority order is:
+
+1. Your project files (highest)
+2. `~~/layers/custom`
+3. `../base`
+4. `@my-themes/awesome`
+5. `github:my-themes/awesome#v1` (lowest)
+
+## Layer Structure
+
+A layer uses the same directory structure as a standard Nuxt application:
+
+<CodeGroup>
+```bash Layer structure
+my-layer/
+├── app/
+│   ├── components/
+│   ├── composables/
+│   ├── layouts/
+│   ├── pages/
+│   └── utils/
+├── public/
+├── server/
+├── nuxt.config.ts
+└── package.json
+```
+</CodeGroup>
+
+This familiar structure makes layers easy to create, understand, and maintain.
+
+## Publishing Layers
+
+You can publish layers as:
+
+- **npm packages**: Easiest to distribute and version
+- **Git repositories**: Great for private layers or monorepos
+- **Local directories**: Perfect for development and testing
+
+## Examples
+
+<Card 
+  title="Content Wind"
+  icon="github"
+  href="https://github.com/Atinux/content-wind"
+>
+  A lightweight Nuxt theme to build a Markdown-driven website. Powered by Nuxt Content, TailwindCSS, and Iconify.
+</Card>
+
+## Best Practices
+
+1. **Version your layers**: Use semantic versioning for published layers
+2. **Document layer features**: Clearly document what your layer provides
+3. **Keep layers focused**: Each layer should have a single, clear purpose
+4. **Test layer compatibility**: Ensure your layer works with target Nuxt versions
+5. **Use priority wisely**: Structure your layers to take advantage of the priority system

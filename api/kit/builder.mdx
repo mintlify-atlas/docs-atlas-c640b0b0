@@ -1,0 +1,233 @@
+---
+title: Builder
+description: Builder utilities to extend Vite and webpack configurations
+---
+
+# Builder
+
+Nuxt Kit provides a set of utilities to help you work with the builder. These functions allow you to extend the Vite and webpack configurations.
+
+Nuxt has builders based on Vite and webpack. You can extend the config passed to each one using the provided functions.
+
+## `extendViteConfig`
+
+Extends the Vite configuration. Callback function can be called multiple times, when applying to both client and server builds.
+
+**Warning:** This hook is now deprecated. Use a Vite plugin with a `config` hook instead, or for environment-specific configuration, the `applyToEnvironment` hook.
+
+### Type
+
+```ts
+function extendViteConfig(
+  callback: (config: ViteConfig) => void,
+  options?: ExtendViteConfigOptions
+): void
+```
+
+### Parameters
+
+**`callback`**: A callback function that will be called with the Vite configuration object.
+
+**`options`**: Options to pass to the callback function:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `dev` | `boolean` | `false` | If set to `true`, the callback function will be called when building in development mode. |
+| `build` | `boolean` | `false` | If set to `true`, the callback function will be called when building in production mode. |
+| `server` | `boolean` | `false` | If set to `true`, the callback function will be called when building the server bundle. **Deprecated in Nuxt 5+.** Use `addVitePlugin()` with `applyToEnvironment()` instead. |
+| `client` | `boolean` | `false` | If set to `true`, the callback function will be called when building the client bundle. **Deprecated in Nuxt 5+.** Use `addVitePlugin()` with `applyToEnvironment()` instead. |
+| `prepend` | `boolean` | `false` | If set to `true`, the callback function will be prepended to the array with `unshift()` instead of `push()`. |
+
+### Usage
+
+```ts
+import { defineNuxtModule, extendViteConfig } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup() {
+    extendViteConfig((config) => {
+      config.optimizeDeps ||= {}
+      config.optimizeDeps.include ||= []
+      config.optimizeDeps.include.push('cross-fetch')
+    })
+  },
+})
+```
+
+## `extendWebpackConfig`
+
+Extends the webpack configuration. Callback function can be called multiple times, when applying to both client and server builds.
+
+### Type
+
+```ts
+function extendWebpackConfig(
+  callback: (config: WebpackConfig) => void,
+  options?: ExtendWebpackConfigOptions
+): void
+```
+
+### Parameters
+
+**`callback`**: A callback function that will be called with the webpack configuration object.
+
+**`options`**: Options to pass to the callback function. Same as `extendViteConfig`.
+
+### Usage
+
+```ts
+import { defineNuxtModule, extendWebpackConfig } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup() {
+    extendWebpackConfig((config) => {
+      config.module!.rules!.push({
+        test: /\.txt$/,
+        use: 'raw-loader',
+      })
+    })
+  },
+})
+```
+
+## `addVitePlugin`
+
+Append Vite plugin to the config.
+
+**Warning:** In Nuxt 5+, plugins registered with `server: false` or `client: false` options will not have their `config` or `configResolved` hooks called. Use the `applyToEnvironment()` method for environment-specific plugins.
+
+### Type
+
+```ts
+function addVitePlugin(
+  pluginOrGetter: VitePlugin | VitePlugin[] | (() => VitePlugin | VitePlugin[]),
+  options?: ExtendViteConfigOptions
+): void
+```
+
+### Parameters
+
+**`pluginOrGetter`**: A Vite plugin instance or an array of Vite plugin instances. If a function is provided, it must return a Vite plugin instance or an array. The function can be async for lazy-loading plugins.
+
+**`options`**: Options to pass to the callback function. Same as `extendViteConfig`.
+
+### Usage
+
+```ts
+import { addVitePlugin, defineNuxtModule } from '@nuxt/kit'
+import { svg4VuePlugin } from 'vite-plugin-svg4vue'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'nuxt-svg-icons',
+    configKey: 'nuxtSvgIcons',
+  },
+  defaults: {
+    svg4vue: {
+      assetsDirName: 'assets/icons',
+    },
+  },
+  setup(options) {
+    addVitePlugin(svg4VuePlugin(options.svg4vue))
+
+    // Or, to add a vite plugin to only one environment
+    addVitePlugin(() => ({
+      name: 'my-client-plugin',
+      applyToEnvironment(environment) {
+        return environment.name === 'client'
+      },
+      // ... rest of your client-only plugin
+    }))
+  },
+})
+```
+
+## `addWebpackPlugin`
+
+Append webpack plugin to the config.
+
+### Type
+
+```ts
+function addWebpackPlugin(
+  pluginOrGetter: WebpackPluginInstance | WebpackPluginInstance[] | (() => WebpackPluginInstance | WebpackPluginInstance[]),
+  options?: ExtendWebpackConfigOptions
+): void
+```
+
+### Parameters
+
+**`pluginOrGetter`**: A webpack plugin instance or an array of webpack plugin instances. If a function is provided, it must return a webpack plugin instance or an array. The function can be async for lazy-loading plugins.
+
+**`options`**: Options to pass to the callback function. Same as `extendWebpackConfig`.
+
+### Usage
+
+```ts
+import EslintWebpackPlugin from 'eslint-webpack-plugin'
+import { addWebpackPlugin, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'nuxt-eslint',
+    configKey: 'eslint',
+  },
+  defaults: nuxt => ({
+    include: [`${nuxt.options.srcDir}/**/*.{js,jsx,ts,tsx,vue}`],
+    lintOnStart: true,
+  }),
+  setup(options, nuxt) {
+    const webpackOptions = {
+      ...options,
+      context: nuxt.options.srcDir,
+      files: options.include,
+      lintDirtyModulesOnly: !options.lintOnStart,
+    }
+    addWebpackPlugin(new EslintWebpackPlugin(webpackOptions), { server: false })
+  },
+})
+```
+
+## `addBuildPlugin`
+
+Builder-agnostic version of `addVitePlugin` and `addWebpackPlugin`. It will add the plugin to both Vite and webpack configurations if they are present.
+
+### Type
+
+```ts
+interface AddBuildPluginFactory {
+  vite?: () => VitePlugin | VitePlugin[]
+  webpack?: () => WebpackPluginInstance | WebpackPluginInstance[]
+  rspack?: () => RspackPluginInstance | RspackPluginInstance[]
+}
+
+function addBuildPlugin(
+  pluginFactory: AddBuildPluginFactory,
+  options?: ExtendConfigOptions
+): void
+```
+
+### Parameters
+
+**`pluginFactory`**: A factory function that returns an object with `vite` and/or `webpack` properties. These properties must be functions that return a plugin instance or an array of plugin instances.
+
+**`options`**: Options to pass to the callback function. Same as `extendViteConfig` and `extendWebpackConfig`.
+
+### Usage
+
+```ts
+import { addBuildPlugin, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup() {
+    addBuildPlugin({
+      vite: () => import('vite-plugin-example').then(m => m.default()),
+      webpack: () => import('webpack-plugin-example').then(m => new m.default()),
+    })
+  },
+})
+```
+
+## Source
+
+[View source on GitHub](https://github.com/nuxt/nuxt/blob/main/packages/kit/src/build.ts)

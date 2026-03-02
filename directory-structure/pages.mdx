@@ -1,0 +1,235 @@
+---
+title: 'pages/'
+description: 'Nuxt provides file-based routing to create routes within your web application.'
+---
+
+<Note>
+To reduce your application's bundle size, this directory is **optional**, meaning that [`vue-router`](https://router.vuejs.org) won't be included if you only use [`app.vue`](/directory-structure/app). To force the pages system, set `pages: true` in `nuxt.config` or have a [`router.options.ts`](/guide/recipes/custom-routing#using-routeroptions).
+</Note>
+
+## Usage
+
+Pages are Vue components and can have any [valid extension](/api/nuxt-config#extensions) that Nuxt supports (by default `.vue`, `.js`, `.jsx`, `.mjs`, `.ts` or `.tsx`).
+
+Nuxt will automatically create a route for every page in your `~/pages/` directory.
+
+<CodeGroup>
+```vue app/pages/index.vue
+<template>
+  <h1>Index page</h1>
+</template>
+```
+
+```ts pages/index.ts
+// https://vuejs.org/guide/extras/render-function.html
+export default defineComponent({
+  render () {
+    return h('h1', 'Index page')
+  },
+})
+```
+
+```tsx pages/index.tsx
+// https://nuxt.com/docs/4.x/examples/advanced/jsx
+// https://vuejs.org/guide/extras/render-function.html#jsx-tsx
+export default defineComponent({
+  render () {
+    return <h1>Index page</h1>
+  },
+})
+```
+</CodeGroup>
+
+The `app/pages/index.vue` file will be mapped to the `/` route of your application.
+
+If you are using [`app.vue`](/directory-structure/app), make sure to use the [`<NuxtPage/>`](/api/components/nuxt-page) component to display the current page:
+
+```vue app/app.vue
+<template>
+  <div>
+    <!-- Markup shared across all pages, ex: NavBar -->
+    <NuxtPage />
+  </div>
+</template>
+```
+
+Pages **must have a single root element** to allow [route transitions](/guide/transitions) between pages. HTML comments are considered elements as well.
+
+This means that when the route is server-rendered, or statically generated, you will be able to see its contents correctly, but when you navigate towards that route during client-side navigation the transition between routes will fail and you'll see that the route will not be rendered.
+
+## Dynamic Routes
+
+If you place anything within square brackets, it will be turned into a [dynamic route](https://router.vuejs.org/guide/essentials/dynamic-matching) parameter. You can mix and match multiple parameters and even non-dynamic text within a file name or directory.
+
+If you want a parameter to be _optional_, you must enclose it in double square brackets - for example, `~/pages/[[slug]]/index.vue` or `~/pages/[[slug]].vue` will match both `/` and `/test`.
+
+```bash
+pages/
+  index.vue
+  users-[group]/
+    [id].vue
+```
+
+Given the example above, you can access group/id within your component via the `$route` object:
+
+```vue app/pages/users-[group]/[id].vue
+<template>
+  <p>{{ $route.params.group }} - {{ $route.params.id }}</p>
+</template>
+```
+
+Navigating to `/users-admins/123` would render:
+
+```html
+<p>admins - 123</p>
+```
+
+If you want to access the route using Composition API, there is a global `useRoute` function that will allow you to access the route just like `this.$route` in the Options API.
+
+```vue
+<script setup lang="ts">
+const route = useRoute()
+
+if (route.params.group === 'admins' && !route.params.id) {
+  console.log('Warning! Make sure user is authenticated!')
+}
+</script>
+```
+
+<Note>
+Named parent routes will take priority over nested dynamic routes. For the `/foo/hello` route, `~/pages/foo.vue` will take priority over `~/pages/foo/[slug].vue`. Use `~/pages/foo/index.vue` and `~/pages/foo/[slug].vue` to match `/foo` and `/foo/hello` with different pages.
+</Note>
+
+## Catch-all Route
+
+If you need a catch-all route, you create it by using a file named like `[...slug].vue`. This will match _all_ routes under that path.
+
+```vue app/pages/[...slug].vue
+<template>
+  <p>{{ $route.params.slug }}</p>
+</template>
+```
+
+Navigating to `/hello/world` would render:
+
+```html
+<p>["hello", "world"]</p>
+```
+
+## Nested Routes
+
+It is possible to display [nested routes](https://router.vuejs.org/guide/essentials/nested-routes) with `<NuxtPage>`.
+
+Example:
+
+```bash
+pages/
+  parent/
+    child.vue
+  parent.vue
+```
+
+This file tree will generate these routes:
+
+```js
+[
+  {
+    path: '/parent',
+    component: '~/pages/parent.vue',
+    name: 'parent',
+    children: [
+      {
+        path: 'child',
+        component: '~/pages/parent/child.vue',
+        name: 'parent-child',
+      },
+    ],
+  },
+]
+```
+
+To display the `child.vue` component, you have to insert the `<NuxtPage>` component inside `app/pages/parent.vue`:
+
+```vue pages/parent.vue
+<template>
+  <div>
+    <h1>I am the parent view</h1>
+    <NuxtPage :foobar="123" />
+  </div>
+</template>
+```
+
+## Page Metadata
+
+You might want to define metadata for each route in your app. You can do this using the `definePageMeta` macro, which will work both in `<script>` and in `<script setup>`:
+
+```vue
+<script setup lang="ts">
+definePageMeta({
+  title: 'My home page',
+})
+</script>
+```
+
+This data can then be accessed throughout the rest of your app from the `route.meta` object.
+
+```vue
+<script setup lang="ts">
+const route = useRoute()
+
+console.log(route.meta.title) // My home page
+</script>
+```
+
+Much like `defineEmits` or `defineProps` (see [Vue docs](https://vuejs.org/api/sfc-script-setup#defineprops-defineemits)), `definePageMeta` is a **compiler macro**. It will be compiled away so you cannot reference it within your component.
+
+## Navigation
+
+To navigate between pages of your app, you should use the [`<NuxtLink>`](/api/components/nuxt-link) component.
+
+This component is included with Nuxt and therefore you don't have to import it as you do with other components.
+
+A simple link to the `index.vue` page in your `app/pages` folder:
+
+```vue
+<template>
+  <NuxtLink to="/">Home page</NuxtLink>
+</template>
+```
+
+## Programmatic Navigation
+
+Nuxt allows programmatic navigation through the `navigateTo()` utility method. Using this utility method, you will be able to programmatically navigate the user in your app.
+
+<Note>
+Make sure to always `await` on `navigateTo` or chain its result by returning from functions.
+</Note>
+
+```vue
+<script setup lang="ts">
+const name = ref('')
+const type = ref(1)
+
+function navigate () {
+  return navigateTo({
+    path: '/search',
+    query: {
+      name: name.value,
+      type: type.value,
+    },
+  })
+}
+</script>
+```
+
+## Client-Only Pages
+
+You can define a page as [client only](/directory-structure/components#client-components) by giving it a `.client.vue` suffix. None of the content of this page will be rendered on the server.
+
+## Server-Only Pages
+
+You can define a page as [server only](/directory-structure/components#server-components) by giving it a `.server.vue` suffix. While you will be able to navigate to the page using client-side navigation, controlled by `vue-router`, it will be rendered with a server component automatically.
+
+<Warning>
+Server-only pages must have a single root element. (HTML comments are considered elements as well.)
+</Warning>

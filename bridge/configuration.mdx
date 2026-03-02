@@ -1,0 +1,393 @@
+---
+title: Bridge Configuration
+description: Learn how to configure Nuxt Bridge to enable specific features and customize your migration experience.
+---
+
+Nuxt Bridge is highly configurable, allowing you to enable or disable features as needed during your migration to Nuxt 3.
+
+## Feature Flags
+
+You can optionally disable some features from Bridge or opt-in to less stable ones. In normal circumstances, it is always best to stick with defaults!
+
+You can check [bridge/src/module.ts](https://github.com/nuxt/bridge/blob/main/packages/bridge/src/module.ts) for latest defaults.
+
+```ts nuxt.config.ts
+import { defineNuxtConfig } from '@nuxt/bridge'
+
+export default defineNuxtConfig({
+  bridge: {
+
+    // -- Opt-in features --
+
+    // Use Vite as the bundler instead of webpack 4
+    // vite: true,
+
+    // Enable Nuxt 3 compatible useHead
+    // meta: true,
+
+    // Enable definePageMeta macro
+    // macros: {
+    //   pageMeta: true
+    // },
+
+    // Enable transpiling TypeScript with esbuild
+    // typescript: {
+    //   esbuild: true
+    // },
+
+    // -- Default features --
+
+    // Use legacy server instead of Nitro
+    // nitro: false,
+
+    // Disable Nuxt 3 compatible `nuxtApp` interface
+    // app: false,
+
+    // Disable Composition API support
+    // capi: false,
+
+    // ... or just disable legacy Composition API support
+    // capi: {
+    //   legacy: false
+    // },
+
+    // Do not transpile modules
+    // transpile: false,
+
+    // Disable <script setup> support
+    // scriptSetup: false,
+
+    // Disable composables auto importing
+    // imports: false,
+
+    // Do not warn about module incompatibilities
+    // constraints: false
+  },
+
+  vite: {
+    // Config for Vite
+  },
+})
+```
+
+## Configuration Options
+
+### vite
+
+Enable Vite as your bundler instead of webpack 4:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    vite: true
+  }
+})
+```
+
+**Benefits:**
+- Faster dev server startup
+- Faster hot module replacement (HMR)
+- Better development experience
+
+### meta
+
+Enable Nuxt 3 compatible `useHead` composable:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    meta: true
+  }
+})
+```
+
+This allows you to use the new `useHead` composable for managing meta tags.
+
+### nitro
+
+Enable the Nitro server engine:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    nitro: true
+  }
+})
+```
+
+**Benefits:**
+- Improved server performance
+- Better deployment options
+- API route improvements
+- Nuxt 3 compatibility
+
+### typescript
+
+Enable TypeScript support with optional esbuild transpilation:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    // Or with esbuild for faster transpilation
+    typescript: {
+      esbuild: true
+    }
+  }
+})
+```
+
+### capi
+
+Configure Composition API support:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    // Enable Composition API
+    capi: true,
+    
+    // Or disable legacy Composition API support
+    capi: {
+      legacy: false
+    }
+  }
+})
+```
+
+### macros
+
+Enable compiler macros like `definePageMeta`:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    macros: {
+      pageMeta: true
+    }
+  }
+})
+```
+
+### imports
+
+Configure auto-imports:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    // Enable auto-imports (default: true)
+    imports: true,
+    
+    // Or disable
+    imports: false
+  }
+})
+```
+
+### scriptSetup
+
+Enable `<script setup>` support:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    scriptSetup: true
+  }
+})
+```
+
+### transpile
+
+Configure module transpilation:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    transpile: true
+  }
+})
+```
+
+### constraints
+
+Control module compatibility warnings:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    // Disable compatibility warnings
+    constraints: false
+  }
+})
+```
+
+## Migration of Specific Options
+
+### router.base → app.baseURL
+
+The `router.base` option has been moved to `app.baseURL`:
+
+```diff nuxt.config.ts
+export default defineNuxtConfig({
+- router: {
+-   base: '/my-app/'
+- }
++ app: {
++   baseURL: '/my-app/'
++ }
+})
+```
+
+### build.publicPath → app.cdnURL
+
+The `build.publicPath` option has been moved to `app.cdnURL`:
+
+```diff nuxt.config.ts
+export default defineNuxtConfig({
+- build: {
+-   publicPath: 'https://my-cdn.net'
+- }
++ app: {
++   cdnURL: 'https://my-cdn.net'
++ }
+})
+```
+
+## Recommended Configuration
+
+For a smooth migration, we recommend enabling features gradually:
+
+### Step 1: Basic Setup
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    capi: true,
+    scriptSetup: true,
+  }
+})
+```
+
+### Step 2: Add Nitro
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    capi: true,
+    scriptSetup: true,
+    nitro: true,  // Add Nitro
+  }
+})
+```
+
+### Step 3: Enable Vite
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    capi: true,
+    scriptSetup: true,
+    nitro: true,
+    vite: true,  // Add Vite
+  }
+})
+```
+
+### Step 4: Add Modern Features
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true,
+    capi: true,
+    scriptSetup: true,
+    nitro: true,
+    vite: true,
+    meta: true,  // Add useHead support
+    macros: {
+      pageMeta: true  // Add definePageMeta
+    }
+  }
+})
+```
+
+## Troubleshooting
+
+### Module Compatibility Issues
+
+If you encounter module compatibility warnings:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    constraints: false  // Disable warnings
+  }
+})
+```
+
+### Build Errors
+
+If you encounter build errors after enabling a feature:
+
+1. Disable the feature temporarily
+2. Clear `.nuxt` directory: `rm -rf .nuxt`
+3. Reinstall dependencies: `npm install`
+4. Try enabling the feature again
+
+### TypeScript Errors
+
+If you see TypeScript errors:
+
+1. Run `nuxi prepare` to regenerate types
+2. Restart your IDE/editor
+3. Check `tsconfig.json` extends `.nuxt/tsconfig.json`
+
+## Configuration Examples
+
+### Minimal Configuration
+
+For a minimal Bridge setup:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: true
+  }
+})
+```
+
+### Full Featured Configuration
+
+For a complete Bridge setup with all features:
+
+```ts
+export default defineNuxtConfig({
+  bridge: {
+    typescript: {
+      esbuild: true
+    },
+    capi: true,
+    scriptSetup: true,
+    imports: true,
+    nitro: true,
+    vite: true,
+    meta: true,
+    macros: {
+      pageMeta: true
+    }
+  }
+})
+```
+
+## Next Steps
+
+After configuring Bridge:
+
+- Test your application thoroughly
+- Gradually enable more features
+- Monitor for compatibility issues
+- Prepare for full Nuxt 3 migration

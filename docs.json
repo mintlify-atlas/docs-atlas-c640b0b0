@@ -1,122 +1,258 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "name": "Nuxt",
   "theme": "mint",
-  "name": "Mint Starter Kit",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#00DC82",
+    "light": "#00DC82",
+    "dark": "#00DC82"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/nuxt/nuxt"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/nuxt/nuxt"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "configuration"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/views",
+              "concepts/routing",
+              "concepts/data-fetching",
+              "concepts/state-management",
+              "concepts/server-side-rendering",
+              "concepts/server-engine",
+              "concepts/modules",
+              "concepts/auto-imports",
+              "concepts/typescript"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Building Your App",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guide/assets",
+              "guide/styling",
+              "guide/seo-meta",
+              "guide/transitions",
+              "guide/error-handling",
+              "guide/layers",
+              "guide/testing"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Directory Structure",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "directory-structure/overview",
+              "directory-structure/app",
+              "directory-structure/pages",
+              "directory-structure/components",
+              "directory-structure/composables",
+              "directory-structure/server",
+              "directory-structure/public",
+              "directory-structure/layouts",
+              "directory-structure/middleware",
+              "directory-structure/plugins",
+              "directory-structure/modules",
+              "directory-structure/nuxt-config"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/prerendering",
+              "deployment/deployment",
+              "deployment/static-hosting",
+              "deployment/node-server",
+              "deployment/edge-deployment"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/nuxt-lifecycle",
+              "advanced/vuejs-development",
+              "advanced/code-style",
+              "advanced/esm",
+              "advanced/kit"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Components",
             "pages": [
-              "api-reference/introduction"
+              "api/components/nuxt-page",
+              "api/components/nuxt-layout",
+              "api/components/nuxt-link",
+              "api/components/nuxt-loading-indicator",
+              "api/components/nuxt-error-boundary",
+              "api/components/nuxt-island",
+              "api/components/nuxt-img",
+              "api/components/nuxt-picture",
+              "api/components/client-only",
+              "api/components/dev-only",
+              "api/components/teleports"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Composables",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/composables/use-nuxt-app",
+              "api/composables/use-async-data",
+              "api/composables/use-fetch",
+              "api/composables/use-lazy-async-data",
+              "api/composables/use-lazy-fetch",
+              "api/composables/use-nuxt-data",
+              "api/composables/use-cookie",
+              "api/composables/use-head",
+              "api/composables/use-head-safe",
+              "api/composables/use-error",
+              "api/composables/use-hydration",
+              "api/composables/use-loading-indicator",
+              "api/composables/use-request-event",
+              "api/composables/use-request-headers",
+              "api/composables/use-app-config"
+            ]
+          },
+          {
+            "group": "Utils",
+            "pages": [
+              "api/utils/overview",
+              "api/utils/dollarfetch",
+              "api/utils/abort-navigation",
+              "api/utils/navigate-to",
+              "api/utils/prefetch-components",
+              "api/utils/preload-components",
+              "api/utils/preload-route-components",
+              "api/utils/refresh-nuxt-data",
+              "api/utils/reload-nuxt-app",
+              "api/utils/set-page-layout"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "api/commands/dev",
+              "api/commands/build",
+              "api/commands/generate",
+              "api/commands/preview",
+              "api/commands/init",
+              "api/commands/prepare",
+              "api/commands/typecheck",
+              "api/commands/analyze",
+              "api/commands/cleanup",
+              "api/commands/devtools",
+              "api/commands/upgrade"
+            ]
+          },
+          {
+            "group": "Nuxt Config",
+            "pages": [
+              "api/nuxt-config"
+            ]
+          },
+          {
+            "group": "Kit API",
+            "pages": [
+              "api/kit/modules",
+              "api/kit/programmatic",
+              "api/kit/compatibility",
+              "api/kit/components",
+              "api/kit/context",
+              "api/kit/pages",
+              "api/kit/plugins",
+              "api/kit/templates",
+              "api/kit/nitro",
+              "api/kit/resolving",
+              "api/kit/logging",
+              "api/kit/builder"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Modules",
+        "groups": [
+          {
+            "group": "Building Modules",
+            "pages": [
+              "modules/introduction",
+              "modules/authoring-guide",
+              "modules/module-anatomy",
+              "modules/best-practices",
+              "modules/recipes"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Migration",
+        "groups": [
+          {
+            "group": "Migration Guides",
+            "pages": [
+              "migration/overview",
+              "migration/configuration",
+              "migration/auto-imports",
+              "migration/pages-and-layouts",
+              "migration/runtime-config",
+              "migration/meta",
+              "migration/plugins-and-middleware"
+            ]
+          },
+          {
+            "group": "Bridge",
+            "pages": [
+              "bridge/overview",
+              "bridge/typescript",
+              "bridge/composition-api",
+              "bridge/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Community",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "community/getting-help",
+              "community/reporting-bugs",
+              "community/contribution",
+              "community/framework-contribution"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "community/roadmap",
+              "community/changelog"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

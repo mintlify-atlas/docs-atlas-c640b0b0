@@ -1,0 +1,45 @@
+---
+title: Migration Overview
+description: Migrate your Nuxt 2 app to Nuxt 3 with this comprehensive guide covering Vue 3, Vite, and Nitro.
+---
+
+Nuxt 3 is a complete rewrite of Nuxt 2, based on a new set of underlying technologies. There are significant changes when migrating a Nuxt 2 app to Nuxt 3, although you can expect migration to become more straightforward as we move toward a stable release.
+
+<Note>
+This migration guide is under progress to align with the development of Nuxt 3.
+</Note>
+
+## Major Changes
+
+Some of these significant changes include:
+
+1. **Moving from Vue 2 to Vue 3** - Including defaulting to the Composition API and script setup.
+2. **Moving from webpack 4 and Babel to Vite or webpack 5 and esbuild** - Faster builds and improved developer experience.
+3. **Moving from a runtime Nuxt dependency to a minimal, standalone server** - Compiled with nitropack.
+
+<Tip>
+If you need to remain on Nuxt 2, but want to benefit from Nuxt 3 features in Nuxt 2, you can alternatively check out [how to get started with Bridge](/bridge/overview).
+</Tip>
+
+## What to Expect
+
+The migration process involves updating your:
+
+- Configuration files and module setup
+- Component structure and syntax
+- Auto-imports and composables
+- Pages, layouts, and routing
+- Runtime configuration and environment variables
+- Meta tags and SEO setup
+- Plugins and middleware
+
+## Next Steps
+
+Start your migration journey by learning about the differences in:
+
+- [Configuration](/migration/configuration) - Update your `nuxt.config` file
+- [Auto-imports](/migration/auto-imports) - Understand automatic component and composable imports
+- [Pages and Layouts](/migration/pages-and-layouts) - Migrate your routing and layout structure
+- [Runtime Config](/migration/runtime-config) - Handle environment variables properly
+- [Meta Tags](/migration/meta) - Update your SEO and meta tag management
+- [Plugins and Middleware](/migration/plugins-and-middleware) - Modernize your plugins and route middleware

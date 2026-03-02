@@ -1,0 +1,212 @@
+---
+title: useAsyncData
+description: useAsyncData provides access to data that resolves asynchronously in an SSR-friendly composable.
+---
+
+Within your pages, components, and plugins you can use useAsyncData to get access to data that resolves asynchronously.
+
+<Note>
+  `useAsyncData` is a composable meant to be called directly in the Nuxt context. It returns reactive composables and handles adding responses to the Nuxt payload so they can be passed from server to client without re-fetching the data on client side when the page hydrates.
+</Note>
+
+## Usage
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+const { data, status, pending, error, refresh, clear } = await useAsyncData(
+  'mountains',
+  (_nuxtApp, { signal }) => $fetch('https://api.nuxtjs.dev/mountains', { signal }),
+)
+</script>
+```
+
+<Note>
+  `data`, `status`, `pending` and `error` are Vue refs and they should be accessed with `.value` when used within the `<script setup>`, while `refresh`/`execute` and `clear` are plain functions.
+</Note>
+
+## Parameters
+
+<ParamField path="key" type="string | Ref<string> | (() => string)">
+  A unique key to ensure that data fetching can be properly de-duplicated across requests. If you do not provide a key, then a key that is unique to the file name and line number of the instance of `useAsyncData` will be generated for you. Can be reactive for dynamic data fetching.
+</ParamField>
+
+<ParamField path="handler" type="(nuxtApp: NuxtApp, options: { signal: AbortSignal }) => Promise<T>" required>
+  An asynchronous function that must return a truthy value (for example, it should not be `undefined` or `null`) or the request may be duplicated on the client side. The handler function should be side-effect free to ensure predictable behavior during SSR and CSR hydration.
+</ParamField>
+
+<ParamField path="options" type="AsyncDataOptions<T>">
+  Options to configure the behavior of `useAsyncData`.
+
+  <ParamField path="server" type="boolean" default="true">
+    Whether to fetch the data on the server.
+  </ParamField>
+
+  <ParamField path="lazy" type="boolean" default="false">
+    Whether to resolve the async function after loading the route, instead of blocking client-side navigation.
+  </ParamField>
+
+  <ParamField path="immediate" type="boolean" default="true">
+    When set to `false`, will prevent the request from firing immediately.
+  </ParamField>
+
+  <ParamField path="default" type="() => T | Ref<T>">
+    A factory function to set the default value of the `data`, before the async function resolves - useful with the `lazy: true` or `immediate: false` option.
+  </ParamField>
+
+  <ParamField path="transform" type="(input: T) => T | Promise<T>">
+    A function that can be used to alter `handler` function result after resolving.
+  </ParamField>
+
+  <ParamField path="getCachedData" type="(key: string, nuxtApp: NuxtApp, ctx: AsyncDataRequestContext) => T | undefined">
+    Provide a function which returns cached data. An `undefined` return value will trigger a fetch.
+  </ParamField>
+
+  <ParamField path="pick" type="string[]">
+    Only pick specified keys in this array from the `handler` function result.
+  </ParamField>
+
+  <ParamField path="watch" type="WatchSource[] | false">
+    Watch reactive sources to auto-refresh. Set to `false` to disable watching.
+  </ParamField>
+
+  <ParamField path="deep" type="boolean" default="false">
+    Return data in a deep ref object. It is `false` by default to return data in a shallow ref object, which can improve performance if your data does not need to be deeply reactive.
+  </ParamField>
+
+  <ParamField path="dedupe" type="'cancel' | 'defer'" default="'cancel'">
+    Avoid fetching same key more than once at a time. `cancel` cancels existing requests when a new one is made. `defer` does not make new requests at all if there is a pending request.
+  </ParamField>
+
+  <ParamField path="timeout" type="number">
+    A number in milliseconds to wait before timing out the request.
+  </ParamField>
+</ParamField>
+
+## Return Values
+
+<ResponseField name="data" type="Ref<T | undefined>">
+  The result of the asynchronous function that is passed in.
+</ResponseField>
+
+<ResponseField name="refresh" type="(opts?: AsyncDataExecuteOptions) => Promise<void>">
+  A function that can be used to refresh the data returned by the `handler` function. Also aliased as `execute`.
+</ResponseField>
+
+<ResponseField name="error" type="Ref<Error | undefined>">
+  An error object if the data fetching failed.
+</ResponseField>
+
+<ResponseField name="status" type="Ref<'idle' | 'pending' | 'success' | 'error'>">
+  A string indicating the status of the data request:
+  - `idle`: when the request has not started
+  - `pending`: the request is in progress
+  - `success`: the request has completed successfully
+  - `error`: the request has failed
+</ResponseField>
+
+<ResponseField name="pending" type="Ref<boolean>">
+  A boolean that is `true` while the request is in progress (that is, while `status.value === 'pending'`).
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  A function that can be used to set `data` to `undefined`, set `error` to `undefined`, set `status` to `idle`, and mark any currently pending requests as cancelled.
+</ResponseField>
+
+## Examples
+
+### Watch Params
+
+The built-in `watch` option allows automatically rerunning the fetcher function when any changes are detected.
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+const page = ref(1)
+const { data: posts } = await useAsyncData(
+  'posts',
+  (_nuxtApp, { signal }) => $fetch('https://fakeApi.com/posts', {
+    params: {
+      page: page.value,
+    },
+    signal,
+  }), {
+    watch: [page],
+  },
+)
+</script>
+```
+
+### Reactive Keys
+
+You can use a computed ref, plain ref or a getter function as the key, allowing for dynamic data fetching that automatically updates when the key changes:
+
+```vue [app/pages/[id].vue]
+<script setup lang="ts">
+const route = useRoute()
+const userId = computed(() => `user-${route.params.id}`)
+
+const { data: user } = useAsyncData(
+  userId,
+  () => fetchUserById(route.params.id),
+)
+</script>
+```
+
+### Make your handler abortable
+
+You can make your `handler` function abortable by using the `signal` provided in the second argument:
+
+```ts
+const { data, error } = await useAsyncData(
+  'users',
+  (_nuxtApp, { signal }) => $fetch('/api/users', { signal }),
+)
+
+refresh() // will actually cancel the $fetch request (if dedupe: cancel)
+refresh()
+
+clear() // will cancel the latest pending handler
+```
+
+## Type
+
+```ts
+export type AsyncDataHandler<ResT> = (
+  nuxtApp: NuxtApp,
+  options: { signal: AbortSignal }
+) => Promise<ResT>
+
+export function useAsyncData<DataT, DataE> (
+  handler: AsyncDataHandler<DataT>,
+  options?: AsyncDataOptions<DataT>,
+): AsyncData<DataT, DataE>
+
+export function useAsyncData<DataT, DataE> (
+  key: MaybeRefOrGetter<string>,
+  handler: AsyncDataHandler<DataT>,
+  options?: AsyncDataOptions<DataT>,
+): Promise<AsyncData<DataT, DataE>>
+
+type AsyncDataOptions<DataT> = {
+  server?: boolean
+  lazy?: boolean
+  immediate?: boolean
+  deep?: boolean
+  dedupe?: 'cancel' | 'defer'
+  default?: () => DataT | Ref<DataT> | null
+  transform?: (input: DataT) => DataT | Promise<DataT>
+  pick?: string[]
+  watch?: MultiWatchSources | false
+  getCachedData?: (key: string, nuxtApp: NuxtApp, ctx: AsyncDataRequestContext) => DataT | undefined
+  timeout?: number
+}
+
+type AsyncData<DataT, ErrorT> = {
+  data: Ref<DataT | undefined>
+  refresh: (opts?: AsyncDataExecuteOptions) => Promise<void>
+  execute: (opts?: AsyncDataExecuteOptions) => Promise<void>
+  clear: () => void
+  error: Ref<ErrorT | undefined>
+  status: Ref<AsyncDataRequestStatus>
+  pending: Ref<boolean>
+}
+```

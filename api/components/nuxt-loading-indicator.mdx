@@ -1,0 +1,67 @@
+---
+title: "<NuxtLoadingIndicator>"
+description: Display a progress bar between page navigations.
+---
+
+## Usage
+
+Add `<NuxtLoadingIndicator/>` in your `app.vue` or layouts.
+
+```vue [app/app.vue]
+<template>
+  <NuxtLoadingIndicator />
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+```
+
+## Props
+
+<ParamField path="color" type="string | false">
+  The color of the loading bar. It can be set to `false` to turn off explicit color styling.
+</ParamField>
+
+<ParamField path="errorColor" type="string">
+  The color of the loading bar when `error` is set to `true`.
+</ParamField>
+
+<ParamField path="height" type="number" default="3">
+  Height of the loading bar, in pixels.
+</ParamField>
+
+<ParamField path="duration" type="number" default="2000">
+  Duration of the loading bar, in milliseconds.
+</ParamField>
+
+<ParamField path="throttle" type="number" default="200">
+  Throttle the appearing and hiding, in milliseconds.
+</ParamField>
+
+<ParamField path="estimatedProgress" type="(duration: number, elapsed: number) => number">
+  By default Nuxt will back off as it approaches 100%. You can provide a custom function to customize the progress estimation, which is a function that receives the duration of the loading bar (above) and the elapsed time. It should return a value between 0 and 100.
+</ParamField>
+
+## Slots
+
+You can pass custom HTML or components through the loading indicator's default slot.
+
+```vue
+<template>
+  <NuxtLoadingIndicator>
+    <span>Custom loading content</span>
+  </NuxtLoadingIndicator>
+</template>
+```
+
+<Note>
+This component is optional. To achieve full customization, you can implement your own one based on [its source code](https://github.com/nuxt/nuxt/blob/main/packages/nuxt/src/app/components/nuxt-loading-indicator.ts).
+</Note>
+
+<Note>
+You can hook into the underlying indicator instance using [the `useLoadingIndicator` composable](/api/composables/use-loading-indicator), which will allow you to trigger start/finish events yourself.
+</Note>
+
+<Tip>
+The loading indicator's speed gradually decreases after reaching a specific point controlled by `estimatedProgress`. This adjustment provides a more accurate reflection of longer page loading times and prevents the indicator from prematurely showing 100% completion.
+</Tip>

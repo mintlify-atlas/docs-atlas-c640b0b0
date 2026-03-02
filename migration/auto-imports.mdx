@@ -1,0 +1,102 @@
+---
+title: Auto-imports Migration
+description: Nuxt 3 adopts a minimal friction approach, meaning components and composables are auto-imported wherever possible.
+---
+
+Nuxt 3 automatically imports components, composables, and utility functions, reducing the need for explicit imports throughout your application.
+
+<Note>
+In the rest of the migration documentation, you will notice that key Nuxt and Vue utilities do not have explicit imports. This is not a typo; Nuxt will automatically import them for you, and you should get full type hinting if you have followed the instructions to use Nuxt's TypeScript support.
+</Note>
+
+## How Auto-imports Work
+
+Nuxt 3 will automatically import:
+
+- **Components** from the `components/` directory
+- **Composables** from the `composables/` directory
+- **Vue APIs** like `ref`, `computed`, `watch`, etc.
+- **Nuxt utilities** like `navigateTo`, `useRoute`, `useRouter`, etc.
+
+This means you can use these in your components without explicit import statements:
+
+```vue
+<template>
+  <div>
+    <MyComponent />
+  </div>
+</template>
+
+<script setup>
+// No imports needed!
+const count = ref(0)
+const route = useRoute()
+
+function navigate() {
+  navigateTo('/about')
+}
+</script>
+```
+
+## Migration from @nuxt/components
+
+If you have been using `@nuxt/components` in Nuxt 2, you can remove `components: true` in your `nuxt.config`. 
+
+If you had a more complex setup, note that the component options have changed somewhat. See the components documentation for more information.
+
+<Tip>
+You can look at `.nuxt/types/components.d.ts` and `.nuxt/types/imports.d.ts` to see how Nuxt has resolved your components and composable auto-imports.
+</Tip>
+
+## Benefits of Auto-imports
+
+1. **Less boilerplate** - No need to write import statements for commonly used utilities
+2. **Better developer experience** - Focus on your logic, not on managing imports
+3. **Type safety** - Full TypeScript support with auto-generated type definitions
+4. **Tree-shaking** - Only imported code is included in your bundle
+
+## Explicit Imports
+
+If you prefer explicit imports, you can disable auto-imports in your `nuxt.config`:
+
+```ts
+export default defineNuxtConfig({
+  imports: {
+    autoImport: false
+  }
+})
+```
+
+You can also selectively import from `#imports`:
+
+```ts
+import { ref, computed } from '#imports'
+```
+
+## Custom Auto-imports
+
+You can configure custom auto-imports in your `nuxt.config`:
+
+```ts
+export default defineNuxtConfig({
+  imports: {
+    dirs: [
+      // Scan top-level modules
+      'composables',
+      // Scan nested directories
+      'composables/*/index.{ts,js,mjs,mts}',
+      // Scan all modules within given directory
+      'composables/**'
+    ]
+  }
+})
+```
+
+## Debugging Auto-imports
+
+To see what Nuxt has auto-imported, check these generated files:
+
+- `.nuxt/types/components.d.ts` - Auto-imported components
+- `.nuxt/types/imports.d.ts` - Auto-imported composables and utilities
+
+These files are automatically updated when you add new components or composables to your project.

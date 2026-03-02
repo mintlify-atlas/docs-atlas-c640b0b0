@@ -1,0 +1,241 @@
+---
+title: useFetch
+description: Fetch data from an API endpoint with an SSR-friendly composable.
+---
+
+This composable provides a convenient wrapper around `useAsyncData` and `$fetch`. It automatically generates a key based on URL and fetch options, provides type hints for request url based on server routes, and infers API response type.
+
+<Note>
+  `useFetch` is a composable meant to be called directly in a setup function, plugin, or route middleware. It returns reactive composables and handles adding responses to the Nuxt payload so they can be passed from server to client without re-fetching the data on client side when the page hydrates.
+</Note>
+
+## Usage
+
+```vue [app/pages/modules.vue]
+<script setup lang="ts">
+const { data, status, error, refresh, clear } = await useFetch('/api/modules', {
+  pick: ['title'],
+})
+</script>
+```
+
+<Note>
+  `data`, `status`, and `error` are Vue refs, and they should be accessed with `.value` when used within the `<script setup>`, while `refresh`/`execute` and `clear` are plain functions.
+</Note>
+
+## Parameters
+
+<ParamField path="url" type="string | Request | Ref<string | Request> | (() => string | Request)" required>
+  The URL or request to fetch. Can be a string, a Request object, a Vue ref, or a function returning a string/Request. Supports reactivity for dynamic endpoints.
+</ParamField>
+
+<ParamField path="options" type="UseFetchOptions<T>">
+  Configuration for the fetch request. Extends unjs/ofetch options and AsyncDataOptions. All options can be a static value, a `ref`, or a computed value.
+
+  <ParamField path="key" type="string | Ref<string> | (() => string)">
+    Unique key for de-duplication. If not provided, generated from URL and options.
+  </ParamField>
+
+  <ParamField path="method" type="string | Ref<string>" default="'GET'">
+    HTTP request method.
+  </ParamField>
+
+  <ParamField path="query" type="Record<string, any> | Ref<Record<string, any>>">
+    Query/search params to append to the URL. Objects are automatically stringified. Alias: `params`.
+  </ParamField>
+
+  <ParamField path="body" type="RequestInit['body'] | Record<string, any> | Ref">
+    Request body. Objects are automatically stringified.
+  </ParamField>
+
+  <ParamField path="headers" type="Record<string, string> | [key, value][] | Headers | Ref">
+    Request headers.
+  </ParamField>
+
+  <ParamField path="baseURL" type="string | Ref<string>">
+    Base URL for the request.
+  </ParamField>
+
+  <ParamField path="timeout" type="number | Ref<number>">
+    Timeout in milliseconds to abort the request.
+  </ParamField>
+
+  <ParamField path="server" type="boolean" default="true">
+    Whether to fetch on the server.
+  </ParamField>
+
+  <ParamField path="lazy" type="boolean" default="false">
+    If true, resolves after route loads (does not block navigation).
+  </ParamField>
+
+  <ParamField path="immediate" type="boolean" default="true">
+    If false, prevents request from firing immediately.
+  </ParamField>
+
+  <ParamField path="default" type="() => T">
+    Factory for default value of `data` before async resolves.
+  </ParamField>
+
+  <ParamField path="transform" type="(input: T) => T | Promise<T>">
+    Function to transform the result after resolving.
+  </ParamField>
+
+  <ParamField path="getCachedData" type="(key: string, nuxtApp: NuxtApp, ctx: AsyncDataRequestContext) => T | undefined">
+    Function to return cached data.
+  </ParamField>
+
+  <ParamField path="pick" type="string[]">
+    Only pick specified keys from the result.
+  </ParamField>
+
+  <ParamField path="watch" type="WatchSource[] | false">
+    Array of reactive sources to watch and auto-refresh. `false` disables watching.
+  </ParamField>
+
+  <ParamField path="deep" type="boolean" default="false">
+    Return data in a deep ref object.
+  </ParamField>
+
+  <ParamField path="dedupe" type="'cancel' | 'defer'" default="'cancel'">
+    Avoid fetching same key more than once at a time. `cancel` cancels existing requests. `defer` does not make new requests if there is a pending one.
+  </ParamField>
+
+  <ParamField path="$fetch" type="typeof globalThis.$fetch">
+    Custom $fetch implementation.
+  </ParamField>
+
+  <ParamField path="onRequest" type="(ctx: { request, options }) => void">
+    Interceptor called before the request. Can modify options.
+  </ParamField>
+
+  <ParamField path="onRequestError" type="(ctx: { request, options, error }) => void">
+    Interceptor called on request errors.
+  </ParamField>
+
+  <ParamField path="onResponse" type="(ctx: { request, response, options }) => void">
+    Interceptor called after successful response.
+  </ParamField>
+
+  <ParamField path="onResponseError" type="(ctx: { request, response, options }) => void">
+    Interceptor called on response errors.
+  </ParamField>
+</ParamField>
+
+## Return Values
+
+<ResponseField name="data" type="Ref<T | undefined>">
+  The result of the asynchronous fetch.
+</ResponseField>
+
+<ResponseField name="refresh" type="(opts?: AsyncDataExecuteOptions) => Promise<void>">
+  Function to manually refresh the data. By default, Nuxt waits until a `refresh` is finished before it can be executed again. Also aliased as `execute`.
+</ResponseField>
+
+<ResponseField name="error" type="Ref<Error | undefined>">
+  Error object if the data fetching failed.
+</ResponseField>
+
+<ResponseField name="status" type="Ref<'idle' | 'pending' | 'success' | 'error'>">
+  Status of the data request:
+  - `idle`: Request has not started (e.g. `{ immediate: false }` or `{ server: false }` on server render)
+  - `pending`: Request is in progress
+  - `success`: Request completed successfully
+  - `error`: Request failed
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  Resets `data` to `undefined` (or the value of `options.default()` if provided), `error` to `undefined`, set `status` to `idle`, and cancels any pending requests.
+</ResponseField>
+
+## Examples
+
+### Query Parameters
+
+Using the `query` option, you can add search parameters to your query:
+
+```ts
+const param1 = ref('value1')
+const { data, status, error, refresh } = await useFetch('/api/modules', {
+  query: { param1, param2: 'value2' },
+})
+```
+
+### Interceptors
+
+You can use interceptors to handle request and response events:
+
+```ts
+const { data, status, error, refresh, clear } = await useFetch('/api/auth/login', {
+  onRequest ({ request, options }) {
+    // Set the request headers
+    options.headers.set('Authorization', '...')
+  },
+  onRequestError ({ request, options, error }) {
+    // Handle the request errors
+  },
+  onResponse ({ request, response, options }) {
+    // Process the response data
+    localStorage.setItem('token', response._data.token)
+  },
+  onResponseError ({ request, response, options }) {
+    // Handle the response errors
+  },
+})
+```
+
+### Reactive URL
+
+You can use a computed ref or a plain ref as the URL:
+
+```vue [app/pages/[id].vue]
+<script setup lang="ts">
+const route = useRoute()
+const id = computed(() => route.params.id)
+
+const { data: post } = await useFetch(() => `/api/posts/${id.value}`)
+</script>
+```
+
+### Reactive Fetch Options
+
+Fetch options can be provided as reactive values:
+
+```ts
+const searchQuery = ref('initial')
+const { data } = await useFetch('/api/search', {
+  query: { q: searchQuery },
+})
+// triggers a refetch: /api/search?q=new%20search
+searchQuery.value = 'new search'
+```
+
+## Type
+
+```ts
+export function useFetch<DataT, ErrorT> (
+  url: string | Request | Ref<string | Request> | (() => string | Request),
+  options?: UseFetchOptions<DataT>,
+): Promise<AsyncData<DataT, ErrorT>>
+
+type UseFetchOptions<DataT> = {
+  key?: MaybeRefOrGetter<string>
+  method?: MaybeRefOrGetter<string>
+  query?: MaybeRefOrGetter<SearchParams>
+  params?: MaybeRefOrGetter<SearchParams>
+  body?: MaybeRefOrGetter<RequestInit['body'] | Record<string, any>>
+  headers?: MaybeRefOrGetter<Record<string, string> | [key: string, value: string][] | Headers>
+  baseURL?: MaybeRefOrGetter<string>
+  server?: boolean
+  lazy?: boolean
+  immediate?: boolean
+  getCachedData?: (key: string, nuxtApp: NuxtApp, ctx: AsyncDataRequestContext) => DataT | undefined
+  deep?: boolean
+  dedupe?: 'cancel' | 'defer'
+  timeout?: number
+  default?: () => DataT
+  transform?: (input: DataT) => DataT | Promise<DataT>
+  pick?: string[]
+  $fetch?: typeof globalThis.$fetch
+  watch?: MultiWatchSources | false
+}
+```

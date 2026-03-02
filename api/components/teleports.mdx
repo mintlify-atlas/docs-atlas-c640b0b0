@@ -1,0 +1,69 @@
+---
+title: "<Teleport>"
+description: The <Teleport> component teleports a component to a different location in the DOM.
+---
+
+<Warning>
+The `to` target of [`<Teleport>`](https://vuejs.org/guide/built-ins/teleport) expects a CSS selector string or an actual DOM node. Nuxt currently has SSR support for teleports to `#teleports` only, with client-side support for other targets using a `<ClientOnly>` wrapper.
+</Warning>
+
+## Body Teleport
+
+To teleport content to the special `#teleports` target (which has full SSR support in Nuxt):
+
+```vue
+<template>
+  <button @click="open = true">
+    Open Modal
+  </button>
+  <Teleport to="#teleports">
+    <div
+      v-if="open"
+      class="modal"
+    >
+      <p>Hello from the modal!</p>
+      <button @click="open = false">
+        Close
+      </button>
+    </div>
+  </Teleport>
+</template>
+```
+
+## Client-side Teleport
+
+For other CSS selectors, wrap `<Teleport>` in `<ClientOnly>` to ensure client-side only rendering:
+
+```vue
+<template>
+  <ClientOnly>
+    <Teleport to="#some-selector">
+      <!-- content -->
+    </Teleport>
+  </ClientOnly>
+</template>
+```
+
+## Props
+
+<ParamField path="to" type="string | Element" required>
+  A CSS selector string or an actual DOM node where the content should be teleported.
+
+  <Note>
+  For SSR support in Nuxt, use `to="#teleports"`. Other targets require wrapping in `<ClientOnly>`.
+  </Note>
+</ParamField>
+
+<ParamField path="disabled" type="boolean" default="false">
+  When `true`, the content will not be teleported and will remain in its original location.
+</ParamField>
+
+## Learn More
+
+<Card
+  title="Vue Teleport Documentation"
+  icon="book"
+  href="https://vuejs.org/guide/built-ins/teleport"
+>
+  Read more about the `<Teleport>` component in Vue's official documentation.
+</Card>

@@ -1,0 +1,248 @@
+---
+title: useCookie
+description: useCookie is an SSR-friendly composable to read and write cookies.
+---
+
+## Usage
+
+Within your pages, components, and plugins, you can use `useCookie` to read and write cookies in an SSR-friendly way.
+
+```ts
+const cookie = useCookie(name, options)
+```
+
+<Note>
+  `useCookie` only works in the Nuxt context.
+</Note>
+
+<Tip>
+  The returned ref will automatically serialize and deserialize cookie values to JSON.
+</Tip>
+
+## Parameters
+
+<ParamField path="name" type="string" required>
+  The name of the cookie.
+</ParamField>
+
+<ParamField path="options" type="CookieOptions<T>">
+  Options to control cookie behavior.
+
+  <ParamField path="decode" type="(value: string) => T">
+    Custom function to decode the cookie value. Since the value of a cookie has a limited character set, this function can be used to decode a previously encoded cookie value into a JavaScript string or other object.
+  </ParamField>
+
+  <ParamField path="encode" type="(value: T) => string">
+    Custom function to encode the cookie value. Since the value of a cookie has a limited character set, this function can be used to encode a value into a string suited for a cookie's value.
+  </ParamField>
+
+  <ParamField path="default" type="() => T | Ref<T>">
+    Function returning the default value if the cookie does not exist. The function can also return a `Ref`.
+  </ParamField>
+
+  <ParamField path="watch" type="boolean | 'shallow'" default="true">
+    Whether to watch for changes and update the cookie. `true` for deep watch, `'shallow'` for shallow watch (only top-level properties), `false` to disable.
+  </ParamField>
+
+  <ParamField path="refresh" type="boolean" default="false">
+    If `true`, the cookie expiration will be refreshed on every explicit write (e.g. `cookie.value = cookie.value`), even if the value itself hasn't changed.
+  </ParamField>
+
+  <ParamField path="readonly" type="boolean" default="false">
+    If `true`, disables writing to the cookie.
+  </ParamField>
+
+  <ParamField path="maxAge" type="number">
+    Max age in seconds for the cookie. The given number will be converted to an integer by rounding down.
+  </ParamField>
+
+  <ParamField path="expires" type="Date">
+    Expiration date for the cookie. By default, no expiration is set.
+  </ParamField>
+
+  <ParamField path="httpOnly" type="boolean" default="false">
+    Sets the HttpOnly attribute. When true, compliant clients will not allow client-side JavaScript to see the cookie in `document.cookie`.
+  </ParamField>
+
+  <ParamField path="secure" type="boolean" default="false">
+    Sets the Secure attribute. When true, compliant clients will not send the cookie back to the server in the future if the browser does not have an HTTPS connection.
+  </ParamField>
+
+  <ParamField path="partitioned" type="boolean" default="false">
+    Sets the Partitioned attribute. This is an attribute that has not yet been fully standardized.
+  </ParamField>
+
+  <ParamField path="domain" type="string">
+    Sets the Domain attribute. By default, no domain is set, and most clients will consider applying the cookie only to the current domain.
+  </ParamField>
+
+  <ParamField path="path" type="string" default="'/'">
+    Sets the Path attribute.
+  </ParamField>
+
+  <ParamField path="sameSite" type="boolean | 'lax' | 'strict' | 'none'">
+    Sets the SameSite attribute. `true` sets to `Strict`, `false` does not set the attribute, or use `'lax'`, `'strict'`, or `'none'`.
+  </ParamField>
+</ParamField>
+
+## Return Values
+
+<ResponseField name="cookie" type="Ref<T>">
+  A Vue `Ref` representing the cookie value. Updating the ref will update the cookie (unless `readonly` is set). The ref is SSR-friendly and will work on both client and server.
+</ResponseField>
+
+## Examples
+
+### Basic Usage
+
+The example below creates a cookie called `counter`. If the cookie doesn't exist, it is initially set to a random value. Whenever we update the `counter` variable, the cookie will be updated accordingly.
+
+```vue [app/app.vue]
+<script setup lang="ts">
+const counter = useCookie('counter')
+
+counter.value ||= Math.round(Math.random() * 1000)
+</script>
+
+<template>
+  <div>
+    <h1>Counter: {{ counter || '-' }}</h1>
+    <button @click="counter = null">
+      reset
+    </button>
+    <button @click="counter--">
+      -
+    </button>
+    <button @click="counter++">
+      +
+    </button>
+  </div>
+</template>
+```
+
+### Readonly Cookies
+
+```vue
+<script setup lang="ts">
+const user = useCookie(
+  'userInfo',
+  {
+    default: () => ({ score: -1 }),
+    watch: false,
+  },
+)
+
+if (user.value) {
+  // the actual `userInfo` cookie will not be updated
+  user.value.score++
+}
+</script>
+
+<template>
+  <div>User score: {{ user?.score }}</div>
+</template>
+```
+
+### Writable Cookies
+
+```vue
+<script setup lang="ts">
+const list = useCookie(
+  'list',
+  {
+    default: () => [],
+    watch: 'shallow',
+  },
+)
+
+function add () {
+  list.value?.push(Math.round(Math.random() * 1000))
+  // list cookie won't be updated with this change
+}
+
+function save () {
+  // the actual `list` cookie will be updated
+  list.value &&= [...list.value]
+}
+</script>
+
+<template>
+  <div>
+    <h1>List</h1>
+    <pre>{{ list }}</pre>
+    <button @click="add">
+      Add
+    </button>
+    <button @click="save">
+      Save
+    </button>
+  </div>
+</template>
+```
+
+### Refreshing Cookies
+
+```vue
+<script setup lang="ts">
+const session = useCookie(
+  'session', {
+    maxAge: 60 * 60, // 1 hour
+    refresh: true,
+    default: () => 'active',
+  })
+
+// Even if the value does not change,
+// the cookie expiration will be refreshed
+// every time the setter is called
+session.value = 'active'
+</script>
+
+<template>
+  <div>Session: {{ session }}</div>
+</template>
+```
+
+### Cookies in API Routes
+
+You can use `getCookie` and `setCookie` from `h3` package to set cookies in server API routes.
+
+```ts [server/api/counter.ts]
+export default defineEventHandler((event) => {
+  // Read counter cookie
+  let counter = getCookie(event, 'counter') || 0
+
+  // Increase counter cookie by 1
+  setCookie(event, 'counter', ++counter)
+
+  // Send JSON response
+  return { counter }
+})
+```
+
+## Type
+
+```ts
+export interface CookieOptions<T = any> {
+  decode?(value: string): T
+  encode?(value: T): string
+  default?: () => T | Ref<T>
+  watch?: boolean | 'shallow'
+  readonly?: boolean
+  refresh?: boolean
+  maxAge?: number
+  expires?: Date
+  httpOnly?: boolean
+  secure?: boolean
+  partitioned?: boolean
+  domain?: string
+  path?: string
+  sameSite?: boolean | 'lax' | 'strict' | 'none'
+}
+
+export interface CookieRef<T> extends Ref<T> {}
+
+export function useCookie<T = string | null | undefined> (
+  name: string,
+  options?: CookieOptions<T>,
+): CookieRef<T>
+```

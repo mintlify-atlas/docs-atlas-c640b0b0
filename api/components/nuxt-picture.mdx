@@ -1,0 +1,94 @@
+---
+title: "<NuxtPicture>"
+description: Nuxt provides a <NuxtPicture> component to handle automatic image optimization.
+---
+
+`<NuxtPicture>` is a drop-in replacement for the native `<picture>` tag.
+
+Usage of `<NuxtPicture>` is almost identical to `<NuxtImg>` but it also allows serving modern formats like `webp` when possible.
+
+Learn more about the [`<picture>` tag on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/picture).
+
+## Setup
+
+In order to use `<NuxtPicture>` you should install and enable the Nuxt Image module:
+
+```bash
+npx nuxt module add image
+```
+
+## Usage
+
+`<NuxtPicture>` outputs a native `<picture>` tag with multiple `<source>` elements for different formats and a fallback `<img>` tag:
+
+```html
+<NuxtPicture src="/nuxt-icon.png" />
+```
+
+Will generate optimized variants in modern formats:
+
+```html
+<picture>
+  <source type="image/webp" srcset="..." />
+  <source type="image/avif" srcset="..." />
+  <img src="/nuxt-icon.png" />
+</picture>
+```
+
+## Props
+
+`<NuxtPicture>` accepts all native `<picture>` and `<img>` attributes plus additional props for image optimization:
+
+<ParamField path="src" type="string" required>
+  The source URL of the image.
+</ParamField>
+
+<ParamField path="width" type="number">
+  The width of the image in pixels. Used for image optimization.
+</ParamField>
+
+<ParamField path="height" type="number">
+  The height of the image in pixels. Used for image optimization.
+</ParamField>
+
+<ParamField path="sizes" type="string">
+  Responsive sizes for different viewport widths. Example: `"sm:100vw md:50vw lg:400px"`
+</ParamField>
+
+<ParamField path="alt" type="string">
+  Alternative text for the image. Important for accessibility.
+</ParamField>
+
+<ParamField path="format" type="string">
+  Comma-separated list of formats to generate (e.g., `"webp,avif,png"`).
+</ParamField>
+
+<ParamField path="quality" type="number">
+  The quality of the optimized image (0-100).
+</ParamField>
+
+<ParamField path="loading" type="'lazy' | 'eager'">
+  Native lazy loading attribute.
+</ParamField>
+
+<ParamField path="provider" type="string">
+  The image provider to use (e.g., `"cloudinary"`, `"imgix"`, `"ipx"`).
+</ParamField>
+
+<ParamField path="preset" type="string">
+  A predefined set of image modifiers.
+</ParamField>
+
+<ParamField path="imgAttrs" type="object">
+  Additional attributes to apply to the `<img>` element.
+</ParamField>
+
+## Learn More
+
+<Card
+  title="NuxtPicture Documentation"
+  icon="image"
+  href="https://image.nuxt.com/usage/nuxt-picture"
+>
+  Read the complete documentation for `<NuxtPicture>` component in the Nuxt Image module docs.
+</Card>

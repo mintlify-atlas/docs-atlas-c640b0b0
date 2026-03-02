@@ -1,0 +1,178 @@
+---
+title: Module System
+description: Learn about Nuxt's module system that extends the framework core and simplifies integrations.
+---
+
+Nuxt provides a powerful module system to extend the framework core and simplify integrations. Understanding modules is essential for building scalable Nuxt applications.
+
+## What are Nuxt Modules?
+
+When developing production-grade applications with Nuxt, you might find that the framework's core functionality is not enough. Nuxt can be extended with configuration options and plugins, but maintaining these customizations across multiple projects can be tedious and time-consuming.
+
+Nuxt modules are async functions that sequentially run when starting Nuxt in development mode using `nuxt dev` or building a project for production with `nuxt build`. They can:
+
+- Override templates
+- Configure webpack loaders
+- Add CSS libraries
+- Perform many other useful tasks
+
+Best of all, Nuxt modules can be distributed in npm packages, making it possible to reuse them across projects and share them with the community.
+
+## Why Use Modules?
+
+Modules solve several common problems:
+
+- **Reusability** - Package and share functionality across projects
+- **Maintainability** - Keep customizations organized and versioned
+- **Ecosystem** - Leverage community-built integrations
+- **Best practices** - Modules often include optimized configurations
+
+## Adding Modules
+
+Once you've installed a module, you can add it to your `nuxt.config.ts` file under the `modules` property.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  modules: [
+    // Using package name (recommended usage)
+    '@nuxtjs/example',
+
+    // Load a local module
+    './modules/example',
+
+    // Add module with inline-options
+    ['./modules/example', { token: '123' }],
+
+    // Inline module definition
+    async (inlineOptions, nuxt) => { },
+  ],
+})
+```
+
+Module developers usually provide additional steps and details for usage in their documentation.
+
+<Note>
+  Nuxt modules are now build-time-only, and the `buildModules` property used in Nuxt 2 is deprecated in favor of `modules`.
+</Note>
+
+## Popular Nuxt Modules
+
+The Nuxt ecosystem includes hundreds of modules for various purposes:
+
+### Content Management
+- **@nuxt/content** - File-based CMS for Nuxt
+- **@nuxtjs/strapi** - Strapi integration
+
+### UI & Styling
+- **@nuxtjs/tailwindcss** - Tailwind CSS integration
+- **@nuxt/ui** - Fully styled and customizable components
+- **@nuxtjs/color-mode** - Dark mode support
+
+### State & Data
+- **@pinia/nuxt** - Official state management
+- **@nuxtjs/apollo** - GraphQL client
+
+### SEO & Analytics
+- **@nuxtjs/seo** - SEO utilities and meta management
+- **@nuxtjs/sitemap** - Automatic sitemap generation
+
+### Development
+- **@nuxt/devtools** - Enhanced development experience
+- **@nuxtjs/eslint** - ESLint integration
+
+## Module Configuration
+
+Many modules accept configuration options. You can pass these options in two ways:
+
+### Inline Configuration
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  modules: [
+    ['@nuxtjs/example', {
+      apiKey: 'your-api-key',
+      enabled: true,
+    }],
+  ],
+})
+```
+
+### Top-Level Configuration
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/example'],
+  example: {
+    apiKey: 'your-api-key',
+    enabled: true,
+  },
+})
+```
+
+The top-level configuration approach is often preferred as it's cleaner and easier to read.
+
+## Disabling Modules
+
+You can disable a module by setting its config key to `false` in your Nuxt config. This is particularly useful when you want to disable modules inherited from layers.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  // Disable @nuxt/image module
+  image: false,
+})
+```
+
+## Creating Your Own Module
+
+Everyone has the opportunity to develop modules and contribute to the ecosystem. Creating a module involves:
+
+1. **Setup** - Use the module starter template
+2. **Development** - Implement your module logic
+3. **Testing** - Ensure your module works correctly
+4. **Publishing** - Share with the community via npm
+
+### Basic Module Structure
+
+```ts modules/example/index.ts
+import { defineNuxtModule, addComponent, createResolver } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-module',
+    configKey: 'myModule',
+  },
+  defaults: {
+    enabled: true,
+  },
+  setup (options, nuxt) {
+    const { resolve } = createResolver(import.meta.url)
+
+    // Add components
+    addComponent({
+      name: 'MyComponent',
+      filePath: resolve('./runtime/components/MyComponent.vue'),
+    })
+  },
+})
+```
+
+## Module Best Practices
+
+When using or creating modules:
+
+- **Use official modules** when available - They're well-maintained and optimized
+- **Check compatibility** - Ensure modules work with your Nuxt version
+- **Read documentation** - Each module may have specific requirements
+- **Keep modules updated** - Benefit from improvements and security fixes
+- **Test thoroughly** - Especially when combining multiple modules
+
+## Exploring Modules
+
+You can explore available Nuxt modules on the official modules page, which provides:
+
+- Searchable module directory
+- Module descriptions and stats
+- Installation instructions
+- Links to documentation and source code
+
+This makes it easy to find the right module for your needs and get started quickly.

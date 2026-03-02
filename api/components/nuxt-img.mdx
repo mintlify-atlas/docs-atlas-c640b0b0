@@ -1,0 +1,88 @@
+---
+title: "<NuxtImg>"
+description: Nuxt provides a <NuxtImg> component to handle automatic image optimization.
+---
+
+`<NuxtImg>` is a drop-in replacement for the native `<img>` tag.
+
+- Uses built-in provider to optimize local and remote images
+- Converts `src` to provider-optimized URLs
+- Automatically resizes images based on `width` and `height`
+- Generates responsive sizes when providing `sizes` option
+- Supports native lazy loading as well as other `<img>` attributes
+
+## Setup
+
+In order to use `<NuxtImg>` you should install and enable the Nuxt Image module:
+
+```bash
+npx nuxt module add image
+```
+
+## Usage
+
+`<NuxtImg>` outputs a native `img` tag directly (without any wrapper around it). Use it like you would use the `<img>` tag:
+
+```html
+<NuxtImg src="/nuxt-icon.png" />
+```
+
+Will result in:
+
+```html
+<img src="/nuxt-icon.png" />
+```
+
+## Props
+
+`<NuxtImg>` accepts all native `<img>` attributes plus additional props for image optimization:
+
+<ParamField path="src" type="string" required>
+  The source URL of the image.
+</ParamField>
+
+<ParamField path="width" type="number">
+  The width of the image in pixels. Used for image optimization.
+</ParamField>
+
+<ParamField path="height" type="number">
+  The height of the image in pixels. Used for image optimization.
+</ParamField>
+
+<ParamField path="sizes" type="string">
+  Responsive sizes for different viewport widths. Example: `"sm:100vw md:50vw lg:400px"`
+</ParamField>
+
+<ParamField path="alt" type="string">
+  Alternative text for the image. Important for accessibility.
+</ParamField>
+
+<ParamField path="format" type="string">
+  The target format for image optimization (e.g., `"webp"`, `"avif"`, `"png"`).
+</ParamField>
+
+<ParamField path="quality" type="number">
+  The quality of the optimized image (0-100).
+</ParamField>
+
+<ParamField path="loading" type="'lazy' | 'eager'">
+  Native lazy loading attribute.
+</ParamField>
+
+<ParamField path="provider" type="string">
+  The image provider to use (e.g., `"cloudinary"`, `"imgix"`, `"ipx"`).
+</ParamField>
+
+<ParamField path="preset" type="string">
+  A predefined set of image modifiers.
+</ParamField>
+
+## Learn More
+
+<Card
+  title="NuxtImg Documentation"
+  icon="image"
+  href="https://image.nuxt.com/usage/nuxt-img"
+>
+  Read the complete documentation for `<NuxtImg>` component in the Nuxt Image module docs.
+</Card>

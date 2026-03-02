@@ -1,0 +1,177 @@
+---
+title: Understand Module Structure
+description: Learn how Nuxt modules are structured and how to define them.
+---
+
+There are two types of Nuxt modules:
+
+- **Published modules** are distributed on npm - you can see a list of some community modules on [the Nuxt website](https://nuxt.com/modules).
+- **Local modules** exist within a Nuxt project, either inlined in Nuxt config or within the `modules` directory.
+
+In either case, they work in the same way.
+
+## Define Your Module
+
+<Note>
+When using the starter, your module definition is available at `src/module.ts`.
+</Note>
+
+The module definition is the entry point of your module. It's what gets loaded by Nuxt when your module is referenced within a Nuxt configuration.
+
+### Low-Level Function Definition
+
+At a low level, a Nuxt module definition is a simple, potentially asynchronous, function accepting inline user options and a `nuxt` object to interact with Nuxt.
+
+```ts
+export default function (inlineOptions, nuxt) {
+  // You can do whatever you like here..
+  console.log(inlineOptions.token) // `123`
+  console.log(nuxt.options.dev) // `true` or `false`
+  nuxt.hook('ready', (nuxt) => {
+    console.log('Nuxt is ready')
+  })
+}
+```
+
+### Using defineNuxtModule Helper
+
+You can get type hinting for this function using the higher-level `defineNuxtModule` helper provided by Nuxt Kit.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule((options, nuxt) => {
+  nuxt.hook('pages:extend', (pages) => {
+    console.log(`Discovered ${pages.length} pages`)
+  })
+})
+```
+
+However, **we do not recommend** using this low-level function definition.
+
+### Recommended: Object Syntax with Meta
+
+Instead, to define a module, **we recommend** using the object-syntax with `meta` property to identify your module, especially when publishing to npm.
+
+This helper makes writing Nuxt modules more straightforward by implementing many common patterns needed by modules, guaranteeing future compatibility and improving the experience for both module authors and users.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    // Usually the npm package name of your module
+    name: '@nuxtjs/example',
+    // The key in `nuxt.config` that holds your module options
+    configKey: 'sample',
+    // Compatibility constraints
+    compatibility: {
+      // Semver version of supported nuxt versions
+      nuxt: '>=3.0.0',
+    },
+  },
+  // Default configuration options for your module, can also be a function returning those
+  defaults: {},
+  // Shorthand sugar to register Nuxt hooks
+  hooks: {},
+  // Configuration for other modules
+  moduleDependencies: {
+    'some-module': {
+      // Version constraint for the module
+      version: '>=2',
+      // By default moduleDependencies will be added to the list of modules
+      optional: true,
+      // Configuration overrides
+      overrides: {},
+      // Default configuration
+      defaults: {},
+    },
+  },
+  // The function holding your module logic, it can be asynchronous
+  setup (moduleOptions, nuxt) {
+    // ...
+  },
+})
+```
+
+### Benefits of defineNuxtModule
+
+`defineNuxtModule` returns a wrapper function with the lower level `(inlineOptions, nuxt)` module signature. This wrapper function applies defaults and other necessary steps before calling your `setup` function:
+
+- Support `defaults` and `meta.configKey` for automatically merging module options
+- Type hints and automated type inference
+- Ensure module gets installed only once using a unique key computed from `meta.name` or `meta.configKey`
+- Automatically register Nuxt hooks
+- Automatically check for compatibility issues based on module meta
+- Expose `getOptions` and `getMeta` for internal usage of Nuxt
+- Ensuring backward and upward compatibility as long as the module is using `defineNuxtModule` from the latest version of `@nuxt/kit`
+- Integration with module builder tooling
+
+## Add Runtime Code
+
+<Note>
+When using the starter, the runtime directory is `src/runtime/`.
+</Note>
+
+Modules, like everything in a Nuxt configuration, aren't included in your application runtime. However, you might want your module to provide, or inject runtime code to the application it's installed on. That's what the runtime directory enables you to do.
+
+### Runtime Assets
+
+Inside the runtime directory, you can provide any kind of assets related to the Nuxt app:
+
+- Vue components
+- Composables
+- Nuxt plugins
+
+For the server engine, Nitro:
+
+- API routes
+- Middlewares
+- Nitro plugins
+
+Or any other kind of asset you want to inject in users' Nuxt applications:
+
+- Stylesheets
+- 3D models
+- Images
+- etc.
+
+You'll then be able to inject all those assets inside the application from your module definition.
+
+<Tip>
+Learn more about asset injection in the [recipes section](/modules/recipes).
+</Tip>
+
+### Auto-Imports Limitation
+
+<Warning>
+Published modules cannot leverage auto-imports for assets within their runtime directory. Instead, they have to import them explicitly from `#imports` or alike.
+
+Auto-imports are not enabled for files within `node_modules` (the location where a published module will eventually live) for performance reasons.
+</Warning>
+
+## Module Structure Summary
+
+Here's the typical structure of a Nuxt module:
+
+```
+my-module/
+├── src/
+│   ├── module.ts          # Module definition
+│   └── runtime/           # Runtime code
+│       ├── components/    # Vue components
+│       ├── composables/   # Composables
+│       ├── plugins/       # Nuxt plugins
+│       └── server/        # Server routes and middleware
+├── playground/            # Test Nuxt application
+├── test/                  # Test files
+└── package.json
+```
+
+## Next Steps
+
+Now that you understand the module structure, learn how to add functionality to your module with recipes.
+
+<Card title="Module Recipes" icon="code" href="/modules/recipes">
+  Add plugins, components, and more to your module
+</Card>

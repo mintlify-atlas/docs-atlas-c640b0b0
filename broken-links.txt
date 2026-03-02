@@ -1,0 +1,7 @@
+checking for broken links...
+
+[2K[1A[2K[G
+parsing error ./AGENTS.md:17:2 - Unexpected character `!` (U+0021) before name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a comment in MDX, use `{/* text */}`)
+
+[2K[1A[2K[Gfound 81 broken links in 33 files
+

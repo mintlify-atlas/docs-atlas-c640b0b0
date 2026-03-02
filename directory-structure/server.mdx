@@ -1,0 +1,259 @@
+---
+title: 'server/'
+description: 'The server/ directory is used to register API and server handlers to your application.'
+---
+
+Nuxt automatically scans files inside these directories to register API and server handlers with Hot Module Replacement (HMR) support.
+
+```bash
+server/
+  api/
+    hello.ts      # /api/hello
+  routes/
+    bonjour.ts    # /bonjour
+  middleware/
+    log.ts        # log all requests
+```
+
+Each file should export a default function defined with `defineEventHandler()` or `eventHandler()` (alias).
+
+The handler can directly return JSON data, a `Promise`, or use `event.node.res.end()` to send a response.
+
+```ts server/api/hello.ts
+export default defineEventHandler((event) => {
+  return {
+    hello: 'world',
+  }
+})
+```
+
+You can now universally call this API in your pages and components:
+
+```vue app/pages/index.vue
+<script setup lang="ts">
+const { data } = await useFetch('/api/hello')
+</script>
+
+<template>
+  <pre>{{ data }}</pre>
+</template>
+```
+
+## Server Routes
+
+Files inside the `~~/server/api` are automatically prefixed with `/api` in their route.
+
+To add server routes without `/api` prefix, put them into `~~/server/routes` directory.
+
+**Example:**
+
+```ts server/routes/hello.ts
+export default defineEventHandler(() => 'Hello World!')
+```
+
+Given the example above, the `/hello` route will be accessible at `http://localhost:3000/hello`.
+
+<Note>
+Note that currently server routes do not support the full functionality of dynamic routes as [pages](/directory-structure/pages#dynamic-routes) do.
+</Note>
+
+## Server Middleware
+
+Nuxt will automatically read in any file in the `~~/server/middleware` to create server middleware for your project.
+
+Middleware handlers will run on every request before any other server route to add or check headers, log requests, or extend the event's request object.
+
+<Note>
+Middleware handlers should not return anything (nor close or respond to the request) and only inspect or extend the request context or throw an error.
+</Note>
+
+**Examples:**
+
+```ts server/middleware/log.ts
+export default defineEventHandler((event) => {
+  console.log('New request: ' + getRequestURL(event))
+})
+```
+
+```ts server/middleware/auth.ts
+export default defineEventHandler((event) => {
+  event.context.auth = { user: 123 }
+})
+```
+
+## Server Plugins
+
+Nuxt will automatically read any files in the `~~/server/plugins` directory and register them as Nitro plugins. This allows extending Nitro's runtime behavior and hooking into lifecycle events.
+
+**Example:**
+
+```ts server/plugins/nitroPlugin.ts
+export default defineNitroPlugin((nitroApp) => {
+  console.log('Nitro plugin', nitroApp)
+})
+```
+
+## Server Utilities
+
+Server routes are powered by [h3js/h3](https://github.com/h3js/h3) which comes with a handy set of helpers.
+
+You can add more helpers yourself inside the `~~/server/utils` directory.
+
+For example, you can define a custom handler utility that wraps the original handler and performs additional operations before returning the final response.
+
+**Example:**
+
+```ts server/utils/handler.ts
+export const defineWrappedResponseHandler = <T extends EventHandlerRequest, D> (
+  handler: EventHandler<T, D>,
+): EventHandler<T, D> =>
+  defineEventHandler<T>(async (event) => {
+    try {
+      // do something before the route handler
+      const response = await handler(event)
+      // do something after the route handler
+      return { response }
+    } catch (err) {
+      // Error handling
+      return { err }
+    }
+  })
+```
+
+## Recipes
+
+### Route Parameters
+
+Server routes can use dynamic parameters within brackets in the file name like `/api/hello/[name].ts` and be accessed via `event.context.params`.
+
+```ts server/api/hello/[name].ts
+export default defineEventHandler((event) => {
+  const name = getRouterParam(event, 'name')
+
+  return `Hello, ${name}!`
+})
+```
+
+You can now universally call this API on `/api/hello/nuxt` and get `Hello, nuxt!`.
+
+### Matching HTTP Method
+
+Handle file names can be suffixed with `.get`, `.post`, `.put`, `.delete`, ... to match request's [HTTP Method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods).
+
+```ts server/api/test.get.ts
+export default defineEventHandler(() => 'Test get handler')
+```
+
+```ts server/api/test.post.ts
+export default defineEventHandler(() => 'Test post handler')
+```
+
+Given the example above, fetching `/test` with:
+
+- **GET** method: Returns `Test get handler`
+- **POST** method: Returns `Test post handler`
+- Any other method: Returns 405 error
+
+### Catch-all Route
+
+Catch-all routes are helpful for fallback route handling.
+
+For example, creating a file named `~~/server/api/foo/[...].ts` will register a catch-all route for all requests that do not match any route handler, such as `/api/foo/bar/baz`.
+
+```ts server/api/foo/[...].ts
+export default defineEventHandler((event) => {
+  // event.context.path to get the route path: '/api/foo/bar/baz'
+  // event.context.params._ to get the route segment: 'bar/baz'
+  return `Default foo handler`
+})
+```
+
+### Body Handling
+
+```ts server/api/submit.post.ts
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event)
+  return { body }
+})
+```
+
+You can now universally call this API using:
+
+```vue app/app.vue
+<script setup lang="ts">
+async function submit () {
+  const { body } = await $fetch('/api/submit', {
+    method: 'post',
+    body: { test: 123 },
+  })
+}
+</script>
+```
+
+<Note>
+We are using `submit.post.ts` in the filename only to match requests with `POST` method that can accept the request body. When using `readBody` within a GET request, `readBody` will throw a `405 Method Not Allowed` HTTP error.
+</Note>
+
+### Query Parameters
+
+Sample query `/api/query?foo=bar&baz=qux`
+
+```ts server/api/query.get.ts
+export default defineEventHandler((event) => {
+  const query = getQuery(event)
+
+  return { a: query.foo, b: query.baz }
+})
+```
+
+### Error Handling
+
+If no errors are thrown, a status code of `200 OK` will be returned.
+
+Any uncaught errors will return a `500 Internal Server Error` HTTP Error.
+
+To return other error codes, throw an exception with `createError`:
+
+```ts server/api/validation/[id].ts
+export default defineEventHandler((event) => {
+  const id = Number.parseInt(event.context.params.id) as number
+
+  if (!Number.isInteger(id)) {
+    throw createError({
+      status: 400,
+      statusText: 'ID should be an integer',
+    })
+  }
+  return 'All good'
+})
+```
+
+### Runtime Config
+
+```ts server/api/foo.ts
+export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig(event)
+
+  const repo = await $fetch('https://api.github.com/repos/nuxt/nuxt', {
+    headers: {
+      Authorization: `token ${config.githubToken}`,
+    },
+  })
+
+  return repo
+})
+```
+
+<Note>
+Giving the `event` as argument to `useRuntimeConfig` is optional, but it is recommended to pass it to get the runtime config overwritten by [environment variables](/advanced/runtime-config#environment-variables) at runtime for server routes.
+</Note>
+
+### Request Cookies
+
+```ts server/api/cookies.ts
+export default defineEventHandler((event) => {
+  const cookies = parseCookies(event)
+
+  return { cookies }
+})
+```

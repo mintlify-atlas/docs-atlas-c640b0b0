@@ -1,0 +1,229 @@
+---
+title: useNuxtApp
+description: Access the shared runtime context of the Nuxt Application.
+---
+
+`useNuxtApp` is a built-in composable that provides a way to access shared runtime context of Nuxt, also known as the Nuxt context, which is available on both client and server side (but not within Nitro routes). It helps you access the Vue app instance, runtime hooks, runtime config variables and internal states, such as `ssrContext` and `payload`.
+
+## Usage
+
+```vue [app/app.vue]
+<script setup lang="ts">
+const nuxtApp = useNuxtApp()
+</script>
+```
+
+If runtime context is unavailable in your scope, `useNuxtApp` will throw an exception when called. You can use `tryUseNuxtApp` instead for composables that do not require `nuxtApp`, or to simply check if context is available or not without an exception.
+
+## Methods
+
+### provide(name, value)
+
+`nuxtApp` is a runtime context that you can extend using Nuxt plugins. Use the `provide` function to create Nuxt plugins to make values and helper methods available in your Nuxt application across all composables and components.
+
+<ParamField path="name" type="string" required>
+  The name of the value to provide. Will be accessible as `$name` on the nuxtApp context.
+</ParamField>
+
+<ParamField path="value" type="any" required>
+  The value or helper function to make available.
+</ParamField>
+
+```ts
+const nuxtApp = useNuxtApp()
+nuxtApp.provide('hello', name => `Hello ${name}!`)
+
+// Prints "Hello name!"
+console.log(nuxtApp.$hello('name'))
+```
+
+### hook(name, cb)
+
+Hooks available in `nuxtApp` allows you to customize the runtime aspects of your Nuxt application. You can use runtime hooks in Vue.js composables and Nuxt plugins to hook into the rendering lifecycle.
+
+<ParamField path="name" type="string" required>
+  The name of the hook to listen to. See [Runtime Hooks](##app-hooks-runtime) for available hooks.
+</ParamField>
+
+<ParamField path="cb" type="Function" required>
+  The callback function to execute when the hook is triggered.
+</ParamField>
+
+```ts [app/plugins/test.ts]
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.hook('page:start', () => {
+    /* your code goes here */
+  })
+  nuxtApp.hook('vue:error', (..._args) => {
+    console.log('vue:error')
+  })
+})
+```
+
+### callHook(name, ...args)
+
+`callHook` returns a promise when called with any of the existing hooks.
+
+<ParamField path="name" type="string" required>
+  The name of the hook to call.
+</ParamField>
+
+<ParamField path="args" type="any[]">
+  Arguments to pass to the hook handlers.
+</ParamField>
+
+<ResponseField name="Promise" type="Promise<void>">
+  A promise that resolves when all hook handlers have completed.
+</ResponseField>
+
+```ts
+await nuxtApp.callHook('my-plugin:init')
+```
+
+## Properties
+
+### vueApp
+
+`vueApp` is the global Vue.js application instance that you can access through `nuxtApp`.
+
+<ResponseField name="vueApp" type="App">
+  The Vue application instance with methods like `component()`, `directive()`, and `use()`.
+</ResponseField>
+
+Some useful methods:
+- `component()` - Registers a global component if passing both a name string and a component definition, or retrieves an already registered one if only the name is passed.
+- `directive()` - Registers a global custom directive if passing both a name string and a directive definition, or retrieves an already registered one if only the name is passed.
+- `use()` - Installs a Vue.js Plugin.
+
+### ssrContext
+
+`ssrContext` is generated during server-side rendering and it is only available on the server side.
+
+<ResponseField name="ssrContext" type="object">
+  The server-side rendering context, available only on the server.
+
+  <ResponseField name="url" type="string">
+    Current request url.
+  </ResponseField>
+
+  <ResponseField name="event" type="H3Event">
+    Access the request & response of the current route.
+  </ResponseField>
+
+  <ResponseField name="payload" type="object">
+    NuxtApp payload object.
+  </ResponseField>
+</ResponseField>
+
+### payload
+
+`payload` exposes data and state variables from server side to client side.
+
+<ResponseField name="payload" type="object">
+  Data passed from server to client during SSR.
+
+  <ResponseField name="serverRendered" type="boolean">
+    Indicates if response is server-side-rendered.
+  </ResponseField>
+
+  <ResponseField name="data" type="object">
+    Cached data from `useFetch` or `useAsyncData` calls.
+  </ResponseField>
+
+  <ResponseField name="state" type="object">
+    State data from `useState` composable.
+  </ResponseField>
+</ResponseField>
+
+### isHydrating
+
+Use `nuxtApp.isHydrating` to check if the Nuxt app is hydrating on the client side.
+
+<ResponseField name="isHydrating" type="boolean">
+  Whether the Nuxt app is currently hydrating on the client side.
+</ResponseField>
+
+```ts [app/components/nuxt-error-boundary.ts]
+export default defineComponent({
+  setup (_props, { slots, emit }) {
+    const nuxtApp = useNuxtApp()
+    onErrorCaptured((err) => {
+      if (import.meta.client && !nuxtApp.isHydrating) {
+        // ...
+      }
+    })
+  },
+})
+```
+
+### runWithContext(fn)
+
+The `runWithContext` method is meant to be used to call a function and give it an explicit Nuxt context.
+
+<ParamField path="fn" type="() => T" required>
+  Any function that requires the context of the current Nuxt application.
+</ParamField>
+
+<ResponseField name="result" type="T">
+  Returns whatever is returned by the provided function.
+</ResponseField>
+
+```ts [app/middleware/auth.ts]
+export default defineNuxtRouteMiddleware(async (to, from) => {
+  const nuxtApp = useNuxtApp()
+  let user
+  try {
+    user = await fetchUser()
+  } catch (e) {
+    user = null
+  }
+  if (!user) {
+    return nuxtApp.runWithContext(() => navigateTo('/auth'))
+  }
+})
+```
+
+## tryUseNuxtApp
+
+This function works exactly the same as `useNuxtApp`, but returns `null` if context is unavailable instead of throwing an exception.
+
+<ResponseField name="nuxtApp" type="NuxtApp | null">
+  The NuxtApp instance if context is available, otherwise `null`.
+</ResponseField>
+
+Example usage:
+
+```ts [composable.ts]
+export function useStandType () {
+  if (tryUseNuxtApp()) {
+    return useRuntimeConfig().public.STAND_TYPE
+  } else {
+    return process.env.STAND_TYPE
+  }
+}
+```
+
+## Type
+
+```ts
+interface NuxtApp {
+  vueApp: App
+  versions: Record<string, string>
+  hooks: Hookable<RuntimeNuxtHooks>
+  hook: NuxtApp['hooks']['hook']
+  callHook: NuxtApp['hooks']['callHook']
+  provide: (name: string, value: any) => void
+  runWithContext: <T>(fn: () => T) => T
+  ssrContext?: SSRContext
+  payload: Payload
+  isHydrating: boolean
+  _asyncDataPromises: Record<string, Promise<any>>
+  _middleware: {
+    global: MiddlewareHandler[]
+    named: Record<string, MiddlewareHandler>
+  }
+}
+
+function useNuxtApp(): NuxtApp
+function tryUseNuxtApp(): NuxtApp | null
+```

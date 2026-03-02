@@ -1,0 +1,216 @@
+---
+title: Modules
+description: Module utilities for creating and using Nuxt modules
+---
+
+# Modules
+
+Nuxt Kit provides a set of utilities to help you create and use modules. Modules are the building blocks of Nuxt, offering a structured way to keep your code organized and modular.
+
+## `defineNuxtModule`
+
+Define a Nuxt module, automatically merging defaults with user provided options, installing any hooks that are provided, and calling an optional setup function for full control.
+
+### Type
+
+```ts
+function defineNuxtModule<TOptions extends ModuleOptions>(
+  definition?: ModuleDefinition<TOptions, Partial<TOptions>, false> | NuxtModule<TOptions, Partial<TOptions>, false>
+): NuxtModule<TOptions, TOptions, false>
+```
+
+### Parameters
+
+**definition**: A module definition object with the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `meta` | `ModuleMeta` | `false` | Metadata of the module. Defines the module name, version, config key, and compatibility. |
+| `defaults` | `T \| ((nuxt: Nuxt) => T)` | `false` | Default options for the module. If a function is provided, it will be called with the Nuxt instance. |
+| `schema` | `T` | `false` | Schema for the module options. If provided, options will be applied to the schema. |
+| `hooks` | `Partial<NuxtHooks>` | `false` | Hooks to be installed for the module. |
+| `moduleDependencies` | `Record<string, ModuleDependency> \| ((nuxt: Nuxt) => Record<string, ModuleDependency>)` | `false` | Dependencies on other modules with version constraints and configuration. |
+| `onInstall` | `(nuxt: Nuxt) => Awaitable<void>` | `false` | Lifecycle hook called when the module is first installed. Requires `meta.name` and `meta.version`. |
+| `onUpgrade` | `(nuxt: Nuxt, options: T, previousVersion: string) => Awaitable<void>` | `false` | Lifecycle hook called when the module is upgraded. Requires `meta.name` and `meta.version`. |
+| `setup` | `(this: void, resolvedOptions: T, nuxt: Nuxt) => Awaitable<void \| false \| ModuleSetupInstallResult>` | `false` | Setup function for the module. |
+
+### Usage
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-module',
+    configKey: 'myModule',
+  },
+  defaults: {
+    enabled: true,
+  },
+  setup(options, nuxt) {
+    if (options.enabled) {
+      console.log('My Nuxt module is enabled!')
+    }
+  },
+})
+```
+
+## Using `configKey` to Make Your Module Configurable
+
+When defining a Nuxt module, you can set a `configKey` to specify how users should configure the module in their `nuxt.config`.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-module',
+    configKey: 'myModule',
+  },
+  defaults: {
+    enabled: true,
+  },
+  setup(options) {
+    if (options.enabled) {
+      console.log('My Nuxt module is enabled!')
+    }
+  },
+})
+```
+
+Users can then provide options:
+
+```ts
+export default defineNuxtConfig({
+  myModule: {
+    enabled: false,
+  },
+})
+```
+
+## Defining Module Compatibility Requirements
+
+If you're developing a Nuxt module and using APIs that are only supported in specific Nuxt versions, include `compatibility.nuxt`.
+
+```ts
+export default defineNuxtModule({
+  meta: {
+    name: '@nuxt/icon',
+    configKey: 'icon',
+    compatibility: {
+      nuxt: '>=3.0.0',
+    },
+  },
+  setup() {
+    // Implementation
+  },
+})
+```
+
+## Type Safety with `.with()`
+
+When you need type safety for your resolved/merged module options, use the `.with()` method.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+interface ModuleOptions {
+  apiKey: string
+  baseURL: string
+  timeout?: number
+  retries?: number
+}
+
+export default defineNuxtModule<ModuleOptions>().with({
+  meta: {
+    name: '@nuxtjs/my-api',
+    configKey: 'myApi',
+  },
+  defaults: {
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    retries: 3,
+  },
+  setup(resolvedOptions, nuxt) {
+    // resolvedOptions is properly typed
+    console.log(resolvedOptions.baseURL) // Always defined
+    console.log(resolvedOptions.timeout) // Always defined
+  },
+})
+```
+
+## Lifecycle Hooks
+
+You can define lifecycle hooks that run when your module is first installed or upgraded to a new version.
+
+**Important:** For lifecycle hooks to work, you must provide both `meta.name` and `meta.version`.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-awesome-module',
+    version: '1.2.0',
+    configKey: 'myAwesomeModule',
+  },
+  defaults: {
+    apiKey: '',
+    enabled: true,
+  },
+  onInstall(nuxt) {
+    console.log('Setting up my-awesome-module for the first time!')
+  },
+  onUpgrade(nuxt, options, previousVersion) {
+    console.log(`Upgrading from ${previousVersion} to 1.2.0`)
+  },
+  setup(options, nuxt) {
+    // Regular setup logic runs on every build
+  },
+})
+```
+
+## Specifying Module Dependencies
+
+Use the `moduleDependencies` option to declare dependencies on other modules.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: 'my-module',
+  },
+  moduleDependencies: {
+    '@nuxtjs/tailwindcss': {
+      version: '>=6.0.0',
+      overrides: {
+        exposeConfig: true,
+      },
+      defaults: {
+        config: {
+          darkMode: 'class',
+        },
+      },
+    },
+    '@nuxtjs/fontaine': {
+      optional: true,
+      defaults: {
+        fonts: [
+          {
+            family: 'Roboto',
+            fallbacks: ['Impact'],
+          },
+        ],
+      },
+    },
+  },
+  setup(options, nuxt) {
+    // Module setup
+  },
+})
+```
+
+## Source
+
+[View source on GitHub](https://github.com/nuxt/nuxt/tree/main/packages/kit/src/module)

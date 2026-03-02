@@ -1,0 +1,243 @@
+---
+title: Auto-Imports
+description: Learn how Nuxt automatically imports components, composables, helper functions, and Vue APIs across your application.
+---
+
+Nuxt auto-imports components, composables, and Vue.js APIs to use across your application without explicitly importing them. This feature improves developer experience while maintaining type safety and tree-shaking.
+
+## What Gets Auto-Imported?
+
+Nuxt automatically imports:
+
+- **Components** from `app/components/`
+- **Composables** from `app/composables/`
+- **Utilities** from `app/utils/`
+- **Vue APIs** like `ref`, `computed`, `watch`, etc.
+- **Nuxt composables** like `useFetch`, `useRoute`, `useState`, etc.
+
+```vue app/app.vue
+<script setup lang="ts">
+const count = ref(1) // ref is auto-imported
+</script>
+```
+
+Thanks to Nuxt's opinionated directory structure, it can auto-import your code from specific directories.
+
+<Note>
+  In the docs, every function that is not explicitly imported is auto-imported by Nuxt and can be used as-is in your code.
+</Note>
+
+## Benefits of Auto-Imports
+
+- **Less boilerplate** - No need to write import statements
+- **Type safety** - Full TypeScript support and IntelliSense
+- **Tree-shaking** - Only includes what's used in production
+- **Better DX** - Focus on building features, not managing imports
+
+Contrary to a classic global declaration, Nuxt preserves typings, IDE completions and hints, and **only includes what is used in your production code**.
+
+## Built-in Auto-Imports
+
+Nuxt auto-imports functions and composables to perform data fetching, get access to the app context and runtime config, manage state, or define components and plugins.
+
+```vue
+<script setup lang="ts">
+/* useFetch() is auto-imported */
+const { data, refresh, status } = await useFetch('/api/hello')
+</script>
+```
+
+Vue exposes Reactivity APIs like `ref` or `computed`, as well as lifecycle hooks and helpers that are auto-imported by Nuxt.
+
+```vue
+<script setup lang="ts">
+/* ref() and computed() are auto-imported */
+const count = ref(1)
+const double = computed(() => count.value * 2)
+</script>
+```
+
+## Directory-Based Auto-Imports
+
+Nuxt directly auto-imports files created in defined directories:
+
+- `app/components/` for Vue components
+- `app/composables/` for Vue composables
+- `app/utils/` for helper functions and other utilities
+
+### Components Auto-Import
+
+Components in `app/components/` are automatically imported and available throughout your application:
+
+```vue app/components/AppButton.vue
+<template>
+  <button class="app-button">
+    <slot />
+  </button>
+</template>
+```
+
+```vue app/app.vue
+<template>
+  <!-- AppButton is auto-imported, no import needed -->
+  <AppButton>Click me</AppButton>
+</template>
+```
+
+### Composables Auto-Import
+
+Composables in `app/composables/` are automatically available:
+
+```ts app/composables/useCounter.ts
+export const useCounter = () => {
+  const count = useState('counter', () => 0)
+  const increment = () => count.value++
+  
+  return {
+    count,
+    increment,
+  }
+}
+```
+
+```vue app/app.vue
+<script setup lang="ts">
+// useCounter is auto-imported
+const { count, increment } = useCounter()
+</script>
+```
+
+### Utils Auto-Import
+
+Utility functions in `app/utils/` are automatically available:
+
+```ts app/utils/format.ts
+export const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value)
+}
+```
+
+```vue app/app.vue
+<script setup lang="ts">
+// formatCurrency is auto-imported
+const price = formatCurrency(99.99)
+</script>
+```
+
+## Context Awareness
+
+When using built-in Composition API composables provided by Vue and Nuxt, be aware that many rely on being called in the right context.
+
+During a component lifecycle, Vue tracks the temporary instance of the current component (and similarly, Nuxt tracks a temporary instance of `nuxtApp`) via a global variable, and then unsets it in the same tick. This is essential when server rendering to avoid cross-request state pollution.
+
+You must use composables synchronously - you cannot use `await` before calling a composable, except within:
+
+- `<script setup>` blocks
+- `setup()` function of components declared with `defineNuxtComponent`
+- `defineNuxtPlugin`
+- `defineNuxtRouteMiddleware`
+
+**Example of breaking code:**
+
+```ts composables/example.ts
+// ❌ Wrong: trying to access runtime config outside a composable
+const config = useRuntimeConfig()
+
+export const useMyComposable = () => {
+  // accessing runtime config here
+}
+```
+
+**Example of working code:**
+
+```ts composables/example.ts
+// ✅ Correct: accessing runtime config inside the composable
+export const useMyComposable = () => {
+  const config = useRuntimeConfig()
+  // ...
+}
+```
+
+## Explicit Imports
+
+Nuxt exposes every auto-import with the `#imports` alias that can be used to make the import explicit if needed:
+
+```vue
+<script setup lang="ts">
+import { computed, ref } from '#imports'
+
+const count = ref(1)
+const double = computed(() => count.value * 2)
+</script>
+```
+
+This can be useful when:
+
+- You need to be explicit for clarity
+- You want to avoid naming conflicts
+- You're working with tools that don't understand auto-imports
+
+## Disabling Auto-Imports
+
+If you want to disable auto-importing composables and utilities, you can set `imports.autoImport` to `false` in the `nuxt.config` file.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  imports: {
+    autoImport: false,
+  },
+})
+```
+
+This will disable auto-imports completely, but you can still use explicit imports from `#imports`.
+
+### Partially Disabling Auto-Imports
+
+If you want framework-specific functions like `ref` to remain auto-imported but wish to disable auto-imports for your own code, you can set `imports.scan` to `false`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  imports: {
+    scan: false,
+  },
+})
+```
+
+With this configuration:
+
+- Framework functions like `ref`, `computed`, or `watch` will still work without manual imports
+- Custom composables and utilities need to be manually imported
+
+## Auto-Importing from Third-Party Packages
+
+Nuxt allows auto-importing from third-party packages. For example, you could enable auto-import of the `useI18n` composable from the `vue-i18n` package:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  imports: {
+    presets: [
+      {
+        from: 'vue-i18n',
+        imports: ['useI18n'],
+      },
+    ],
+  },
+})
+```
+
+<Tip>
+  If you're using the Nuxt module for a package, it likely has already configured auto-imports for you.
+</Tip>
+
+## Best Practices
+
+- **Use auto-imports** - They're optimized and type-safe
+- **Organize by directory** - Put files in the correct directory for auto-import
+- **Name exports carefully** - Avoid naming conflicts
+- **Use TypeScript** - Get full type safety and IntelliSense
+- **Be aware of context** - Understand when and where composables can be called
+
+Auto-imports make Nuxt development faster and more enjoyable while maintaining code quality and performance.

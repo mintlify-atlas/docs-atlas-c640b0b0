@@ -1,0 +1,227 @@
+---
+title: 'navigateTo'
+description: 'Programmatically navigate users to pages.'
+---
+
+`navigateTo` is available on both server side and client side. It can be used within the Nuxt context, or directly, to perform page navigation.
+
+<Warning>
+Make sure to always use `await` or `return` on result of `navigateTo` when calling it.
+</Warning>
+
+<Note>
+`navigateTo` cannot be used within Nitro routes. To perform a server-side redirect in Nitro routes, use [`sendRedirect`](https://h3.dev/utils/response#redirectlocation-status-statustext) instead.
+</Note>
+
+## Type Signature
+
+```ts
+function navigateTo(
+  to: RouteLocationRaw | undefined | null,
+  options?: NavigateToOptions
+): Promise<void | NavigationFailure | false> | false | void | RouteLocationRaw
+
+interface NavigateToOptions {
+  replace?: boolean
+  redirectCode?: number
+  external?: boolean
+  open?: OpenOptions
+}
+
+type OpenOptions = {
+  target: string
+  windowFeatures?: OpenWindowFeatures
+}
+
+type OpenWindowFeatures = {
+  popup?: boolean
+  noopener?: boolean
+  noreferrer?: boolean
+} & XOR<{ width?: number }, { innerWidth?: number }>
+  & XOR<{ height?: number }, { innerHeight?: number }>
+  & XOR<{ left?: number }, { screenX?: number }>
+  & XOR<{ top?: number }, { screenY?: number }>
+```
+
+## Parameters
+
+<ParamField path="to" type="RouteLocationRaw | undefined | null" default="'/'">
+  The route to navigate to. Can be a plain string or a route object. When passed as `undefined` or `null`, it will default to `'/'`.
+</ParamField>
+
+<ParamField path="options" type="NavigateToOptions" optional>
+  Navigation options object.
+  
+  <Expandable title="options properties">
+    <ParamField path="replace" type="boolean" default="false">
+      By default, `navigateTo` pushes the given route into the Vue Router's instance on the client side. Set to `true` to replace the current route instead.
+    </ParamField>
+    
+    <ParamField path="redirectCode" type="number" default="302">
+      The HTTP status code to use for server-side redirects. Defaults to `302 Found`. Commonly, `301 Moved Permanently` can be used for permanent redirections.
+    </ParamField>
+    
+    <ParamField path="external" type="boolean" default="false">
+      Allows navigating to an external URL when set to `true`. Otherwise, `navigateTo` will throw an error, as external navigation is not allowed by default.
+    </ParamField>
+    
+    <ParamField path="open" type="OpenOptions" optional>
+      Allows navigating to the URL using the `window.open()` method. This option is only applicable on the client side and will be ignored on the server side.
+      
+      <Expandable title="open properties">
+        <ParamField path="target" type="string" default="'_blank'">
+          A string, without whitespace, specifying the name of the browsing context the resource is being loaded into.
+        </ParamField>
+        
+        <ParamField path="windowFeatures" type="OpenWindowFeatures" optional>
+          Window features configuration object.
+          
+          <Expandable title="windowFeatures properties">
+            <ParamField path="popup" type="boolean" optional>
+              Requests a minimal popup window instead of a new tab, with UI features decided by the browser.
+            </ParamField>
+            
+            <ParamField path="width" type="number" optional>
+              Specifies the content area's width (minimum 100 pixels), including scrollbars. Mutually exclusive with `innerWidth`.
+            </ParamField>
+            
+            <ParamField path="innerWidth" type="number" optional>
+              Specifies the content area's width (minimum 100 pixels), including scrollbars. Mutually exclusive with `width`.
+            </ParamField>
+            
+            <ParamField path="height" type="number" optional>
+              Specifies the content area's height (minimum 100 pixels), including scrollbars. Mutually exclusive with `innerHeight`.
+            </ParamField>
+            
+            <ParamField path="innerHeight" type="number" optional>
+              Specifies the content area's height (minimum 100 pixels), including scrollbars. Mutually exclusive with `height`.
+            </ParamField>
+            
+            <ParamField path="left" type="number" optional>
+              Sets the horizontal position of the new window relative to the left edge of the screen. Mutually exclusive with `screenX`.
+            </ParamField>
+            
+            <ParamField path="screenX" type="number" optional>
+              Sets the horizontal position of the new window relative to the left edge of the screen. Mutually exclusive with `left`.
+            </ParamField>
+            
+            <ParamField path="top" type="number" optional>
+              Sets the vertical position of the new window relative to the top edge of the screen. Mutually exclusive with `screenY`.
+            </ParamField>
+            
+            <ParamField path="screenY" type="number" optional>
+              Sets the vertical position of the new window relative to the top edge of the screen. Mutually exclusive with `top`.
+            </ParamField>
+            
+            <ParamField path="noopener" type="boolean" optional>
+              Prevents the new window from accessing the originating window via `window.opener`.
+            </ParamField>
+            
+            <ParamField path="noreferrer" type="boolean" optional>
+              Prevents the Referer header from being sent and implicitly enables `noopener`.
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Within a Vue Component
+
+```vue
+<script setup lang="ts">
+// Passing 'to' as a string
+await navigateTo('/search')
+
+// ... or as a route object
+await navigateTo({ path: '/search' })
+
+// ... or as a route object with query parameters
+await navigateTo({
+  path: '/search',
+  query: {
+    page: 1,
+    sort: 'asc',
+  },
+})
+</script>
+```
+
+### Within Route Middleware
+
+```ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  if (to.path !== '/search') {
+    // Setting the redirect code to '301 Moved Permanently'
+    return navigateTo('/search', { redirectCode: 301 })
+  }
+})
+```
+
+<Warning>
+When using `navigateTo` within route middleware, you must **return its result** to ensure the middleware execution flow works correctly.
+
+The following implementation **will not work as expected**:
+
+```ts
+export default defineNuxtRouteMiddleware((to, from) => {
+  if (to.path !== '/search') {
+    // This will not work as expected
+    navigateTo('/search', { redirectCode: 301 })
+    return
+  }
+})
+```
+
+In this case, `navigateTo` will be executed but not returned, which may lead to unexpected behavior.
+</Warning>
+
+### Navigating to an External URL
+
+The `external` parameter influences how navigating to URLs is handled:
+
+- **Without `external: true`**:
+  - Internal URLs navigate as expected.
+  - External URLs throw an error.
+
+- **With `external: true`**:
+  - Internal URLs navigate with a full-page reload.
+  - External URLs navigate as expected.
+
+```vue
+<script setup lang="ts">
+// Will throw an error;
+// navigating to an external URL is not allowed by default
+await navigateTo('https://nuxt.com')
+
+// Will redirect successfully with the 'external' parameter set to 'true'
+await navigateTo('https://nuxt.com', {
+  external: true,
+})
+</script>
+```
+
+### Opening a Page in a New Tab
+
+```vue
+<script setup lang="ts">
+// Will open 'https://nuxt.com' in a new tab
+await navigateTo('https://nuxt.com', {
+  open: {
+    target: '_blank',
+    windowFeatures: {
+      width: 500,
+      height: 500,
+    },
+  },
+})
+</script>
+```
+
+## See Also
+
+- [Route Middleware Guide](/guide/directory-structure/middleware)
+- [`abortNavigation`](/api/utils/abort-navigation)

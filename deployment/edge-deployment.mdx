@@ -1,0 +1,560 @@
+---
+title: Edge and Serverless Deployment
+description: Deploy your Nuxt application to edge networks and serverless platforms for global distribution with minimal latency.
+---
+
+Edge deployment enables you to run your Nuxt application on CDN edge networks worldwide, providing the lowest possible latency for your users.
+
+## What is Edge Deployment?
+
+Edge computing runs your application code in data centers distributed globally, close to your users. This provides:
+
+<CardGroup cols={2}>
+  <Card title="Low Latency" icon="gauge-high">
+    Serve requests from the nearest location to your users
+  </Card>
+  <Card title="Global Scale" icon="earth-americas">
+    Automatic worldwide distribution
+  </Card>
+  <Card title="High Availability" icon="shield-check">
+    Built-in redundancy and failover
+  </Card>
+  <Card title="Cost Efficiency" icon="dollar-sign">
+    Pay only for actual usage
+  </Card>
+</CardGroup>
+
+<Note>
+  Nuxt's server engine, [Nitro](https://nitro.build), makes edge deployment possible with minimal configuration. Nitro can deploy to more than 15 different edge and serverless platforms.
+</Note>
+
+## Popular Edge Platforms
+
+### Cloudflare Workers
+
+Deploy to Cloudflare's global edge network with 250+ data centers worldwide.
+
+<Steps>
+  <Step title="Configure the preset">
+    Set the Cloudflare Workers preset in your `nuxt.config.ts`:
+
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        preset: 'cloudflare-pages',
+        // or 'cloudflare' for Cloudflare Workers
+      },
+    })
+    ```
+  </Step>
+
+  <Step title="Build for Cloudflare">
+    ```bash
+    npm run build
+    ```
+
+    Or use the environment variable:
+    ```bash
+    NITRO_PRESET=cloudflare-pages npm run build
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    Using Wrangler CLI:
+    ```bash
+    npx wrangler pages publish .output/public
+    ```
+
+    Or connect your Git repository in the Cloudflare Pages dashboard for automatic deployments.
+  </Step>
+</Steps>
+
+#### Cloudflare Configuration
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'cloudflare-pages',
+    cloudflare: {
+      pages: {
+        routes: {
+          exclude: ['/static/*'],
+        },
+      },
+    },
+  },
+})
+```
+
+### Vercel Edge Functions
+
+Deploy to Vercel's Edge Network for serverless computing at the edge.
+
+<Steps>
+  <Step title="Install Vercel CLI">
+    ```bash
+    npm i -g vercel
+    ```
+  </Step>
+
+  <Step title="Configure for Vercel">
+    Vercel auto-detects Nuxt. Optionally, configure edge functions:
+
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        preset: 'vercel-edge',
+      },
+    })
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    ```bash
+    vercel deploy --prod
+    ```
+
+    Or connect your Git repository for automatic deployments.
+  </Step>
+</Steps>
+
+#### Vercel Edge Middleware
+
+Use route rules to specify which routes run on the edge:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/api/**': { isr: false }, // Run API routes on edge
+    '/blog/**': { isr: true }, // Use ISR for blog
+  },
+})
+```
+
+### Netlify Edge Functions
+
+Deploy to Netlify's globally distributed edge network powered by Deno.
+
+<Steps>
+  <Step title="Configure the preset">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        preset: 'netlify-edge',
+      },
+    })
+    ```
+  </Step>
+
+  <Step title="Create netlify.toml">
+    ```toml netlify.toml
+    [build]
+      command = "npm run build"
+      publish = ".output/public"
+
+    [[edge_functions]]
+      function = "server"
+      path = "/*"
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    ```bash
+    netlify deploy --prod
+    ```
+
+    Or connect your Git repository in the Netlify dashboard.
+  </Step>
+</Steps>
+
+### Deno Deploy
+
+Run your Nuxt app on Deno's fast, globally distributed edge runtime.
+
+<Steps>
+  <Step title="Configure for Deno">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        preset: 'deno-deploy',
+      },
+    })
+    ```
+  </Step>
+
+  <Step title="Build">
+    ```bash
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Deploy with deployctl">
+    ```bash
+    deployctl deploy --project=my-nuxt-app .output/server/index.ts
+    ```
+  </Step>
+</Steps>
+
+## Serverless Platforms
+
+### AWS Lambda
+
+Deploy to AWS Lambda for serverless Node.js execution.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'aws-lambda',
+  },
+})
+```
+
+<Tabs>
+  <Tab title="Direct Lambda">
+    ```bash
+    # Build
+    NITRO_PRESET=aws-lambda npm run build
+
+    # The output will be in .output/server/
+    # Upload to AWS Lambda
+    ```
+  </Tab>
+
+  <Tab title="Lambda@Edge">
+    For CloudFront integration:
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        preset: 'aws-lambda-edge',
+      },
+    })
+    ```
+  </Tab>
+</Tabs>
+
+### Azure Functions
+
+Deploy to Microsoft Azure Functions.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'azure-functions',
+  },
+})
+```
+
+Build and deploy:
+```bash
+NITRO_PRESET=azure-functions npm run build
+func azure functionapp publish <APP_NAME>
+```
+
+### Google Cloud Functions
+
+Deploy to Google Cloud Platform's serverless functions.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'gcp-functions',
+  },
+})
+```
+
+## Hybrid Rendering at the Edge
+
+Combine different rendering strategies for optimal performance:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'cloudflare-pages',
+  },
+  
+  routeRules: {
+    // Homepage: Pre-rendered at build time
+    '/': { prerender: true },
+    
+    // Blog: ISR with 1 hour revalidation
+    '/blog/**': { isr: 3600 },
+    
+    // API: Always fresh from edge
+    '/api/**': { cors: true, cache: false },
+    
+    // Product pages: SWR with 10 min cache
+    '/products/**': { swr: 600 },
+    
+    // Static assets: Cache for 1 year
+    '/_nuxt/**': { headers: { 'cache-control': 'max-age=31536000' } },
+  },
+})
+```
+
+### Rendering Strategy Options
+
+<ResponseField name="prerender" type="boolean">
+  Pre-render at build time, serve as static file
+</ResponseField>
+
+<ResponseField name="isr" type="number | boolean">
+  Incremental Static Regeneration - regenerate in background after TTL
+</ResponseField>
+
+<ResponseField name="swr" type="number | boolean">
+  Stale-While-Revalidate - serve cached, update in background
+</ResponseField>
+
+<ResponseField name="ssr" type="boolean">
+  Server-side render on every request (edge runtime)
+</ResponseField>
+
+## Edge Runtime Limitations
+
+Be aware of edge runtime constraints:
+
+<Warning>
+  Edge runtimes have limitations compared to Node.js:
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="No Node.js APIs">
+    Edge runtimes don't support all Node.js APIs. Use web standards:
+    - Use `fetch()` instead of Node's `http`
+    - Use `crypto.subtle` instead of Node's `crypto`
+    - Avoid file system operations
+  </Accordion>
+
+  <Accordion title="Execution time limits">
+    - Cloudflare Workers: 50ms CPU time (paid plans get more)
+    - Vercel Edge: 30 seconds max
+    - Netlify Edge: 50ms CPU time
+    
+    Design for quick responses and use async operations.
+  </Accordion>
+
+  <Accordion title="Memory constraints">
+    Edge functions typically have 128MB memory limit. Optimize:
+    - Minimize dependencies
+    - Use code splitting
+    - Avoid large data processing
+  </Accordion>
+
+  <Accordion title="Cold starts">
+    First request may be slower. Minimize impact:
+    - Keep bundles small
+    - Use tree-shaking
+    - Lazy load when possible
+  </Accordion>
+</AccordionGroup>
+
+## Environment Variables
+
+Configure environment variables for edge platforms:
+
+<Tabs>
+  <Tab title="Cloudflare">
+    ```bash
+    # Using Wrangler
+    wrangler secret put NUXT_API_SECRET
+    ```
+
+    Or in `wrangler.toml`:
+    ```toml
+    [vars]
+    NUXT_PUBLIC_API_BASE = "https://api.example.com"
+    ```
+  </Tab>
+
+  <Tab title="Vercel">
+    ```bash
+    # Using Vercel CLI
+    vercel env add NUXT_API_SECRET production
+    ```
+
+    Or in project settings dashboard.
+  </Tab>
+
+  <Tab title="Netlify">
+    ```bash
+    # Using Netlify CLI
+    netlify env:set NUXT_API_SECRET value
+    ```
+
+    Or in site settings dashboard.
+  </Tab>
+</Tabs>
+
+## Database Connections
+
+For edge deployments, use connection poolers or edge-compatible databases:
+
+### Edge-Compatible Databases
+
+<CardGroup cols={2}>
+  <Card title="Cloudflare D1" icon="database">
+    SQLite on Cloudflare's edge
+  </Card>
+  <Card title="Turso" icon="database">
+    Edge-replicated SQLite database
+  </Card>
+  <Card title="PlanetScale" icon="database">
+    Serverless MySQL with HTTP API
+  </Card>
+  <Card title="Upstash Redis" icon="database">
+    Redis with HTTP API for edge
+  </Card>
+</CardGroup>
+
+### Example: Cloudflare D1
+
+```ts server/api/users.get.ts
+export default defineEventHandler(async (event) => {
+  const db = event.context.cloudflare.env.DB
+  const { results } = await db.prepare('SELECT * FROM users').all()
+  return results
+})
+```
+
+### Example: Upstash Redis
+
+```ts server/api/cache.ts
+import { Redis } from '@upstash/redis'
+
+export default defineEventHandler(async (event) => {
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_URL,
+    token: process.env.UPSTASH_REDIS_TOKEN,
+  })
+
+  const cached = await redis.get('key')
+  if (cached) return cached
+
+  const data = await fetchData()
+  await redis.set('key', data, { ex: 3600 })
+  return data
+})
+```
+
+## Performance Monitoring
+
+Monitor your edge deployments:
+
+<Tabs>
+  <Tab title="Cloudflare Analytics">
+    Built-in analytics in Cloudflare dashboard:
+    - Request volume
+    - Response times
+    - Error rates
+    - Geographic distribution
+  </Tab>
+
+  <Tab title="Vercel Analytics">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      modules: ['@nuxtjs/vercel-analytics'],
+    })
+    ```
+  </Tab>
+
+  <Tab title="Custom Monitoring">
+    ```ts server/middleware/timing.ts
+    export default defineEventHandler((event) => {
+      const start = Date.now()
+      
+      event.node.res.on('finish', () => {
+        const duration = Date.now() - start
+        console.log(`${event.path}: ${duration}ms`)
+      })
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Optimize bundle size">
+    Keep edge bundles small for faster cold starts:
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        minify: true,
+        sourceMap: false,
+      },
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Use edge-compatible packages">
+    Choose packages that work in edge runtimes:
+    - Avoid Node.js-specific dependencies
+    - Use web standard APIs
+    - Check package compatibility
+  </Accordion>
+
+  <Accordion title="Implement caching strategies">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      routeRules: {
+        '/api/**': { 
+          cache: { 
+            maxAge: 60,
+            staleMaxAge: 300,
+          },
+        },
+      },
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Test edge behavior locally">
+    ```bash
+    # Test with Miniflare for Cloudflare Workers
+    npm install -D miniflare
+    npx miniflare .output/server/index.mjs
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Module not found in edge runtime">
+    The module likely uses Node.js APIs. Solutions:
+    - Find an edge-compatible alternative
+    - Use dynamic imports with fallbacks
+    - Move functionality to API routes with Node.js runtime
+  </Accordion>
+
+  <Accordion title="Timeout errors">
+    Edge functions have time limits:
+    - Optimize slow operations
+    - Use background tasks where available
+    - Consider moving to Node.js serverless for longer tasks
+  </Accordion>
+
+  <Accordion title="Environment variables not accessible">
+    Ensure environment variables are properly configured:
+    - Use `process.env` or `useRuntimeConfig()`
+    - Set variables in platform dashboard
+    - Prefix with `NUXT_` for runtime config
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Node.js Deployment" icon="server" href="/deployment/node-server">
+    Deploy to traditional Node.js servers
+  </Card>
+  <Card title="Static Hosting" icon="file" href="/deployment/static-hosting">
+    Pre-render and deploy to static hosts
+  </Card>
+  <Card title="Deployment Overview" icon="rocket" href="/deployment/deployment">
+    Explore all deployment options
+  </Card>
+  <Card title="Prerendering" icon="zap" href="/deployment/prerendering">
+    Learn about prerendering strategies
+  </Card>
+</CardGroup>

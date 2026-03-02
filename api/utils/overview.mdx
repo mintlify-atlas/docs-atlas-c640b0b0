@@ -1,0 +1,47 @@
+---
+title: 'Utils Overview'
+description: 'Nuxt provides a comprehensive set of utility functions for navigation, data management, and component handling.'
+---
+
+Nuxt provides utilities and auto-imported helper functions to help you build your application. These utilities are available throughout your app without needing to import them.
+
+## Navigation Utils
+
+- [`navigateTo`](/api/utils/navigate-to) - Programmatically navigate users to pages
+- [`abortNavigation`](/api/utils/abort-navigation) - Prevent navigation and throw errors in route middleware
+
+## Data Management Utils
+
+- [`refreshNuxtData`](/api/utils/refresh-nuxt-data) - Refresh all or specific asyncData instances
+- [`reloadNuxtApp`](/api/utils/reload-nuxt-app) - Perform a hard reload of the app
+
+## Component Preloading Utils
+
+- [`prefetchComponents`](/api/utils/prefetch-components) - Prefetch globally registered components
+- [`preloadComponents`](/api/utils/preload-components) - Preload globally registered components
+- [`preloadRouteComponents`](/api/utils/preload-route-components) - Preload components for a given route
+
+## Layout Utils
+
+- [`setPageLayout`](/api/utils/set-page-layout) - Dynamically change the layout of a page
+
+## HTTP Utils
+
+- [`$fetch`](/api/utils/dollarfetch) - Make HTTP requests with automatic SSR optimization
+
+## Usage
+
+All utilities are auto-imported and available globally in your Nuxt application:
+
+```vue
+<script setup>
+// Navigate to a page
+await navigateTo('/dashboard')
+
+// Refresh data
+await refreshNuxtData('myKey')
+
+// Preload a route
+await preloadRouteComponents('/about')
+</script>
+```

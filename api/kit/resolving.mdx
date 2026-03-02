@@ -1,0 +1,185 @@
+---
+title: Resolving
+description: Resolving utilities to help you resolve paths
+---
+
+# Resolving
+
+Nuxt Kit provides a set of utilities to help you resolve paths. These functions allow you to resolve paths relative to the current module, with unknown name or extension.
+
+Sometimes you need to resolve paths: relative to the current module, with unknown name or extension. For example, you may want to add a plugin that is located in the same directory as the module.
+
+## `resolvePath`
+
+Resolves full path to a file or directory respecting Nuxt alias and extensions options. If path could not be resolved, normalized input path will be returned.
+
+### Type
+
+```ts
+function resolvePath(path: string, options?: ResolvePathOptions): Promise<string>
+```
+
+### Parameters
+
+**`path`**: A path to resolve.
+
+**`options`**: Options to pass to the resolver:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `cwd` | `string` | `false` | Base for resolving paths from. Default is Nuxt rootDir. |
+| `alias` | `Record<string, string>` | `false` | An object of aliases. Default is Nuxt configured aliases. |
+| `extensions` | `string[]` | `false` | The file extensions to try. Default is Nuxt configured extensions. |
+| `virtual` | `boolean` | `false` | Whether to resolve files that exist in the Nuxt VFS (for example, as a Nuxt template). |
+| `fallbackToOriginal` | `boolean` | `false` | Whether to fallback to the original path if the resolved path does not exist. |
+
+### Usage
+
+```ts
+import { defineNuxtModule, resolvePath } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  async setup() {
+    const entrypoint = await resolvePath('@unhead/vue')
+    console.log(`Unhead entrypoint is ${entrypoint}`)
+  },
+})
+```
+
+## `resolveAlias`
+
+Resolves path aliases respecting Nuxt alias options.
+
+### Type
+
+```ts
+function resolveAlias(path: string, alias?: Record<string, string>): string
+```
+
+### Parameters
+
+**`path`**: A path to resolve.
+
+**`alias`**: An object of aliases. If not provided, it will be read from `nuxt.options.alias`.
+
+## `findPath`
+
+Try to resolve first existing file in given paths.
+
+### Type
+
+```ts
+function findPath(
+  paths: string | string[],
+  options?: ResolvePathOptions,
+  pathType: 'file' | 'dir'
+): Promise<string | null>
+```
+
+### Parameters
+
+**`paths`**: A path or an array of paths to resolve.
+
+**`options`**: Options to pass to the resolver. Same options as `resolvePath`.
+
+**`pathType`**: Whether to look for a file or directory. Default is `'file'`.
+
+### Usage
+
+```ts
+import { defineNuxtModule, findPath } from '@nuxt/kit'
+import { join } from 'pathe'
+
+export default defineNuxtModule({
+  async setup(_, nuxt) {
+    // Resolve main (app.vue)
+    const mainComponent = await findPath([
+      join(nuxt.options.srcDir, 'App'),
+      join(nuxt.options.srcDir, 'app'),
+    ])
+  },
+})
+```
+
+## `createResolver`
+
+Creates resolver relative to base path.
+
+### Type
+
+```ts
+function createResolver(basePath: string | URL): Resolver
+```
+
+### Parameters
+
+**`basePath`**: A base path to resolve from. It can be a string or a URL.
+
+### Return Value
+
+The `createResolver` function returns an object with the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `resolve` | `(path: string) => string` | A function that resolves a path relative to the base path. |
+| `resolvePath` | `(path: string, options?: ResolvePathOptions) => Promise<string>` | A function that resolves a path relative to the base path and respects Nuxt alias and extensions options. |
+
+### Usage
+
+```ts
+import { createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup(_, nuxt) {
+    const { resolve, resolvePath } = createResolver(import.meta.url)
+    
+    // Resolve relative to this module
+    const pluginPath = resolve('./runtime/plugin.js')
+  },
+})
+```
+
+## Example: Resolving components from a package
+
+```ts
+import { defineNuxtModule, resolvePath, addComponent } from '@nuxt/kit'
+import { join } from 'pathe'
+
+const headlessComponents = [
+  {
+    relativePath: 'combobox/combobox.js',
+    chunkName: 'headlessui/combobox',
+    exports: ['Combobox', 'ComboboxLabel', 'ComboboxButton'],
+  },
+]
+
+export default defineNuxtModule({
+  meta: {
+    name: 'nuxt-headlessui',
+    configKey: 'headlessui',
+  },
+  defaults: {
+    prefix: 'Headless',
+  },
+  async setup(options) {
+    const entrypoint = await resolvePath('@headlessui/vue')
+    const root = join(entrypoint, '../components')
+
+    for (const group of headlessComponents) {
+      for (const e of group.exports) {
+        addComponent({
+          name: e,
+          export: e,
+          filePath: join(root, group.relativePath),
+          chunkName: group.chunkName,
+          mode: 'all',
+        })
+      }
+    }
+  },
+})
+```
+
+## Source
+
+[View source on GitHub](https://github.com/nuxt/nuxt/blob/main/packages/kit/src/resolve.ts)

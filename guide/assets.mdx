@@ -1,0 +1,93 @@
+---
+title: Asset Handling
+description: Learn how to manage static assets and build-processed files in your Nuxt application using the public and assets directories.
+---
+
+Nuxt provides two directories to handle assets like stylesheets, fonts, and images. Understanding the difference between these directories will help you optimize your application's performance.
+
+## Public Directory
+
+Use the `public/` directory to serve static assets at a defined URL without any processing. Files in this directory are served as-is at the server root.
+
+### Accessing Public Assets
+
+You can reference files in the `public/` directory from your application's code or browser using the root URL `/`.
+
+<CodeGroup>
+```vue app/app.vue
+<template>
+  <img
+    src="/img/nuxt.png"
+    alt="Discover Nuxt"
+  >
+</template>
+```
+</CodeGroup>
+
+In this example, an image file located at `public/img/nuxt.png` is available at the static URL `/img/nuxt.png`.
+
+### When to Use Public
+
+Choose the `public/` directory when you:
+- Need files accessible at a static, predictable URL
+- Want to serve assets without build-time processing
+- Have files that don't require optimization or transformation
+
+## Assets Directory
+
+Nuxt uses Vite (default) or webpack to build and bundle your application. The `app/assets/` directory stores files that you want these build tools to process.
+
+### How Build Tools Process Assets
+
+Build tools can transform your assets for:
+- Performance optimization (minification, compression)
+- Browser cache invalidation (file hashing)
+- Modern format conversion
+- Code splitting and lazy loading
+
+You can extend build tools through [Vite plugins](https://vite.dev/plugins/) or [webpack loaders](https://webpack.js.org/loaders/) to process additional file types like stylesheets, fonts, or SVGs.
+
+### Referencing Assets
+
+By convention, place files you want processed in the `app/assets/` directory. Reference these files in your code using the `~/assets/` path.
+
+<Note>
+The `app/assets/` directory has no auto-scan functionality. You can use any other directory name if you prefer.
+</Note>
+
+<CodeGroup>
+```vue app/app.vue
+<template>
+  <img
+    src="~/assets/img/nuxt.png"
+    alt="Discover Nuxt"
+  >
+</template>
+```
+</CodeGroup>
+
+This example references an image that will be processed by your build tool if it's configured to handle image files.
+
+<Warning>
+Nuxt won't serve files in the `app/assets/` directory at a static URL like `/assets/my-file.png`. If you need a static URL, use the `public/` directory instead.
+</Warning>
+
+## Choosing the Right Directory
+
+Use this guide to decide where to place your assets:
+
+| Asset Type | Recommended Directory | Reason |
+|------------|----------------------|--------|
+| Favicon, robots.txt | `public/` | Need static URLs |
+| Large images, videos | `public/` | Avoid build processing overhead |
+| Fonts (referenced in CSS) | `public/` | Need predictable paths |
+| Stylesheets, preprocessor files | `app/assets/` | Benefit from processing |
+| SVGs used in components | `app/assets/` | Can be optimized |
+| Component-specific images | `app/assets/` | Can be bundled |
+
+## Best Practices
+
+1. **Keep public/ lean**: Only place files that truly need static URLs
+2. **Leverage assets/ for optimization**: Let build tools optimize images, styles, and other processable assets
+3. **Use descriptive paths**: Organize files in subdirectories (`public/img/`, `assets/styles/`)
+4. **Consider CDN deployment**: For production, both directories can be deployed to a CDN for better performance

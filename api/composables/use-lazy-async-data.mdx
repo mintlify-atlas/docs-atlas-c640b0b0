@@ -1,0 +1,119 @@
+---
+title: useLazyAsyncData
+description: This wrapper around useAsyncData triggers navigation immediately.
+---
+
+`useLazyAsyncData` provides a wrapper around `useAsyncData` that triggers navigation before the handler is resolved by setting the `lazy` option to `true`.
+
+<Note>
+  By default, `useAsyncData` blocks navigation until its async handler is resolved. `useLazyAsyncData` allows navigation to occur immediately while data fetching continues in the background.
+</Note>
+
+## Usage
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+const { status, data: posts } = await useLazyAsyncData('posts', () => $fetch('/api/posts'))
+</script>
+
+<template>
+  <div>
+    <div v-if="status === 'pending'">
+      Loading...
+    </div>
+    <div v-else-if="status === 'error'">
+      Error loading posts
+    </div>
+    <div v-else>
+      {{ posts }}
+    </div>
+  </div>
+</template>
+```
+
+When using `useLazyAsyncData`, navigation will occur before fetching is complete. This means you must handle `pending` and `error` states directly within your component's template.
+
+<Warning>
+  `useLazyAsyncData` is a reserved function name transformed by the compiler, so you should not name your own function `useLazyAsyncData`.
+</Warning>
+
+## Parameters
+
+`useLazyAsyncData` accepts the same parameters as `useAsyncData`, with the `lazy` option automatically set to `true`.
+
+<ParamField path="key" type="string">
+  A unique key to ensure that data fetching can be properly de-duplicated across requests.
+</ParamField>
+
+<ParamField path="handler" type="(ctx?: NuxtApp) => Promise<T>" required>
+  An asynchronous function that returns the data.
+</ParamField>
+
+<ParamField path="options" type="AsyncDataOptions<T>">
+  Same options as `useAsyncData`, with `lazy` automatically set to `true`. See [useAsyncData parameters](/api/composables/use-async-data#parameters) for details.
+</ParamField>
+
+## Return Values
+
+`useLazyAsyncData` returns the same values as `useAsyncData`.
+
+<ResponseField name="data" type="Ref<T | undefined>">
+  The result of the asynchronous function that is passed in.
+</ResponseField>
+
+<ResponseField name="refresh" type="(opts?: AsyncDataExecuteOptions) => Promise<void>">
+  A function that can be used to refresh the data returned by the `handler` function.
+</ResponseField>
+
+<ResponseField name="error" type="Ref<Error | undefined>">
+  An error object if the data fetching failed.
+</ResponseField>
+
+<ResponseField name="status" type="Ref<'idle' | 'pending' | 'success' | 'error'>">
+  A string indicating the status of the data request.
+</ResponseField>
+
+<ResponseField name="pending" type="Ref<boolean>">
+  A boolean that is `true` while the request is in progress.
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  A function that can be used to set `data` to `undefined`, set `error` to `undefined`, set `status` to `idle`, and mark any currently pending requests as cancelled.
+</ResponseField>
+
+## Example
+
+```vue [app/pages/index.vue]
+<script setup lang="ts">
+/* Navigation will occur before fetching is complete.
+  Handle 'pending' and 'error' states directly within your component's template
+*/
+const { status, data: count } = await useLazyAsyncData('count', () => $fetch('/api/count'))
+
+watch(count, (newCount) => {
+  // Because count might start out null, you won't have access
+  // to its contents immediately, but you can watch it.
+})
+</script>
+
+<template>
+  <div>
+    {{ status === 'pending' ? 'Loading' : count }}
+  </div>
+</template>
+```
+
+## Type
+
+```ts
+export function useLazyAsyncData<DataT, ErrorT> (
+  handler: (ctx?: NuxtApp) => Promise<DataT>,
+  options?: AsyncDataOptions<DataT>,
+): AsyncData<DataT, ErrorT>
+
+export function useLazyAsyncData<DataT, ErrorT> (
+  key: string,
+  handler: (ctx?: NuxtApp) => Promise<DataT>,
+  options?: AsyncDataOptions<DataT>,
+): AsyncData<DataT, ErrorT>
+```

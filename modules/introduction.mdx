@@ -1,0 +1,81 @@
+---
+title: Module Author Guide
+description: Learn how to create a Nuxt module to integrate, enhance or extend any Nuxt applications.
+---
+
+Nuxt's configuration and hooks systems make it possible to customize every aspect of Nuxt and add any integration you might need (Vue plugins, CMS, server routes, components, logging, etc.).
+
+## What are Nuxt Modules?
+
+**Nuxt modules** are functions that sequentially run when starting Nuxt in development mode using `nuxt dev` or building a project for production with `nuxt build`.
+
+With modules, you can encapsulate, properly test, and share custom solutions as npm packages without adding unnecessary boilerplate to your project, or requiring changes to Nuxt itself.
+
+## Why Create Modules?
+
+Modules enable you to:
+
+- **Encapsulate functionality** - Package complex integrations into reusable modules
+- **Share solutions** - Distribute your work as npm packages for the community
+- **Maintain clean projects** - Avoid adding boilerplate code directly to your application
+- **Extend Nuxt** - Add features without modifying the Nuxt core
+
+## Getting Started
+
+<CardGroup cols={2}>
+  <Card title="Create Your First Module" icon="rocket" href="/modules/authoring-guide">
+    Learn how to create your first Nuxt module using the official starter template.
+  </Card>
+  
+  <Card title="Understand Module Structure" icon="box" href="/modules/module-anatomy">
+    Learn how Nuxt modules are structured and how to define them.
+  </Card>
+  
+  <Card title="Module Recipes" icon="code" href="/modules/recipes">
+    Learn how to inject plugins, components, composables and server routes from your module.
+  </Card>
+  
+  <Card title="Follow Best Practices" icon="star" href="/modules/best-practices">
+    Build performant and maintainable Nuxt modules with these guidelines.
+  </Card>
+</CardGroup>
+
+## Module Capabilities
+
+With Nuxt modules, you can:
+
+- Add **Vue plugins** to enhance your application
+- Inject **components** that auto-import across the app
+- Provide **composables** for reusable logic
+- Add **server routes** and API endpoints
+- Integrate with **CMS** and external services
+- Extend **Nuxt configuration** programmatically
+- Hook into the **Nuxt lifecycle** at any point
+- Add **TypeScript** type declarations
+
+## How Modules Work
+
+Modules run sequentially during the Nuxt initialization process. They can modify the Nuxt configuration, add plugins, register components, and hook into various lifecycle events to customize your application's behavior.
+
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  meta: {
+    name: '@nuxtjs/example',
+    configKey: 'sample'
+  },
+  setup (options, nuxt) {
+    // Your module logic here
+    console.log('Module is running!')
+  }
+})
+```
+
+## Next Steps
+
+Ready to build your first module? Follow our step-by-step authoring guide to get started with the official module starter template.
+
+<Card title="Start Building" icon="arrow-right" href="/modules/authoring-guide">
+  Create your first Nuxt module
+</Card>

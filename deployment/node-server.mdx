@@ -1,0 +1,491 @@
+---
+title: Node.js Server Deployment
+description: Deploy your Nuxt application to Node.js hosting environments with full server-side rendering capabilities.
+---
+
+The Node.js server preset allows you to deploy your Nuxt application to any Node.js hosting environment with full server-side rendering (SSR) support.
+
+<Note>
+  The Node.js server preset is the **default output format** if none is specified or auto-detected by Nitro.
+</Note>
+
+## Why Choose Node.js Deployment
+
+<CardGroup cols={2}>
+  <Card title="Full SSR Support" icon="server">
+    Complete server-side rendering for every request
+  </Card>
+  <Card title="Optimized Performance" icon="gauge-high">
+    Loads only required chunks for optimal cold start timing
+  </Card>
+  <Card title="Universal Compatibility" icon="circle-check">
+    Works with any Node.js hosting provider
+  </Card>
+  <Card title="Dynamic Content" icon="rotate">
+    Serve personalized content per request
+  </Card>
+</CardGroup>
+
+## Building for Production
+
+<Steps>
+  <Step title="Build your application">
+    Run the build command to create a production-ready Node.js server:
+
+    <CodeGroup>
+      ```bash npm
+      npm run build
+      ```
+
+      ```bash yarn
+      yarn build
+      ```
+
+      ```bash pnpm
+      pnpm build
+      ```
+
+      ```bash bun
+      bun run build
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Review the output">
+    The build creates an optimized server in the `.output` directory:
+
+    ```
+    .output/
+    ├── server/
+    │   ├── index.mjs       # Server entry point
+    │   ├── chunks/         # Server code chunks
+    │   └── node_modules/   # Server dependencies
+    ├── public/             # Static assets
+    │   └── _nuxt/         # Client bundles
+    └── nitro.json         # Nitro configuration
+    ```
+  </Step>
+
+  <Step title="Start the server">
+    Launch your production Nuxt server:
+
+    ```bash
+    node .output/server/index.mjs
+    ```
+
+    Your server will start on port 3000 by default.
+  </Step>
+</Steps>
+
+## Environment Variables
+
+The Node.js server respects the following runtime environment variables:
+
+<ParamField path="NITRO_PORT" type="string | number" default="3000">
+  The port the server listens on. Also accepts `PORT`.
+
+  ```bash
+  NITRO_PORT=8080 node .output/server/index.mjs
+  ```
+</ParamField>
+
+<ParamField path="NITRO_HOST" type="string" default="0.0.0.0">
+  The host address to bind to. Also accepts `HOST`.
+
+  ```bash
+  NITRO_HOST=127.0.0.1 node .output/server/index.mjs
+  ```
+</ParamField>
+
+<ParamField path="NITRO_SSL_CERT" type="string">
+  Path to SSL certificate file. Requires `NITRO_SSL_KEY` to enable HTTPS.
+
+  <Warning>
+    Only use for local testing. In production, use a reverse proxy like nginx or Cloudflare to terminate SSL.
+  </Warning>
+</ParamField>
+
+<ParamField path="NITRO_SSL_KEY" type="string">
+  Path to SSL private key file. Requires `NITRO_SSL_CERT` to enable HTTPS.
+</ParamField>
+
+### Example Configuration
+
+```bash .env
+NITRO_PORT=3000
+NITRO_HOST=0.0.0.0
+NODE_ENV=production
+```
+
+## Process Management with PM2
+
+[PM2](https://pm2.keymetrics.io/) is a production-grade process manager for Node.js applications. It provides process monitoring, automatic restarts, and cluster mode support.
+
+### Installing PM2
+
+```bash
+npm install -g pm2
+```
+
+### Basic PM2 Configuration
+
+Create an `ecosystem.config.cjs` file in your project root:
+
+```js ecosystem.config.cjs
+module.exports = {
+  apps: [
+    {
+      name: 'NuxtAppName',
+      port: '3000',
+      exec_mode: 'cluster',
+      instances: 'max',
+      script: './.output/server/index.mjs',
+    },
+  ],
+}
+```
+
+### PM2 Commands
+
+<CodeGroup>
+  ```bash Start application
+  pm2 start ecosystem.config.cjs
+  ```
+
+  ```bash Stop application
+  pm2 stop NuxtAppName
+  ```
+
+  ```bash Restart application
+  pm2 restart NuxtAppName
+  ```
+
+  ```bash View logs
+  pm2 logs NuxtAppName
+  ```
+
+  ```bash Monitor
+  pm2 monit
+  ```
+
+  ```bash Auto-start on boot
+  pm2 startup
+  pm2 save
+  ```
+</CodeGroup>
+
+### Advanced PM2 Configuration
+
+```js ecosystem.config.cjs
+module.exports = {
+  apps: [
+    {
+      name: 'nuxt-app',
+      script: './.output/server/index.mjs',
+      
+      // Cluster mode configuration
+      instances: 'max', // or specific number like 4
+      exec_mode: 'cluster',
+      
+      // Environment variables
+      env: {
+        NODE_ENV: 'production',
+        NITRO_PORT: 3000,
+        NITRO_HOST: '0.0.0.0',
+      },
+      
+      // Logging
+      error_file: './logs/err.log',
+      out_file: './logs/out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      
+      // Auto-restart configuration
+      max_memory_restart: '1G',
+      autorestart: true,
+      watch: false,
+      
+      // Graceful shutdown
+      kill_timeout: 5000,
+    },
+  ],
+}
+```
+
+## Cluster Mode
+
+Leverage multi-core systems by running multiple Node.js processes:
+
+### Using Nitro Cluster Preset
+
+Set the cluster preset when building:
+
+```bash
+NITRO_PRESET=node_cluster npm run build
+```
+
+Or configure in `nuxt.config.ts`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'node_cluster',
+  },
+})
+```
+
+By default, the workload is distributed to workers using the round-robin strategy.
+
+### Cluster Configuration
+
+Configure cluster behavior:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'node_cluster',
+    cluster: {
+      workers: 4, // Number of workers (default: CPU cores)
+    },
+  },
+})
+```
+
+## Deployment Platforms
+
+Deploy your Node.js Nuxt application to popular platforms:
+
+<Tabs>
+  <Tab title="DigitalOcean">
+    ### Deploy to DigitalOcean App Platform
+
+    1. Push your code to GitHub/GitLab
+    2. Create a new App in DigitalOcean
+    3. Connect your repository
+    4. Configure build settings:
+       - Build Command: `npm run build`
+       - Run Command: `node .output/server/index.mjs`
+    5. Set environment variables
+    6. Deploy
+  </Tab>
+
+  <Tab title="Railway">
+    ### Deploy to Railway
+
+    Railway auto-detects Nuxt applications:
+
+    1. Install Railway CLI: `npm i -g @railway/cli`
+    2. Login: `railway login`
+    3. Initialize: `railway init`
+    4. Deploy: `railway up`
+
+    Or use the Railway dashboard to connect your Git repository.
+  </Tab>
+
+  <Tab title="Render">
+    ### Deploy to Render
+
+    1. Connect your Git repository
+    2. Create a new Web Service
+    3. Configure:
+       - Build Command: `npm run build`
+       - Start Command: `node .output/server/index.mjs`
+    4. Set environment variables
+    5. Deploy
+  </Tab>
+
+  <Tab title="Heroku">
+    ### Deploy to Heroku
+
+    Create a `Procfile`:
+    ```
+    web: node .output/server/index.mjs
+    ```
+
+    Deploy:
+    ```bash
+    heroku create my-nuxt-app
+    git push heroku main
+    ```
+  </Tab>
+</Tabs>
+
+## Docker Deployment
+
+Containerize your Nuxt application:
+
+```dockerfile Dockerfile
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy built application
+COPY .output .output
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=3000
+
+# Start server
+CMD ["node", ".output/server/index.mjs"]
+```
+
+### Build and Run
+
+```bash
+# Build the image
+docker build -t my-nuxt-app .
+
+# Run the container
+docker run -p 3000:3000 -e NITRO_PORT=3000 my-nuxt-app
+```
+
+### Docker Compose
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - NITRO_PORT=3000
+      - NITRO_HOST=0.0.0.0
+    restart: unless-stopped
+```
+
+## Reverse Proxy Setup
+
+### Nginx Configuration
+
+```nginx /etc/nginx/sites-available/nuxt-app
+server {
+    listen 80;
+    server_name example.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### Apache Configuration
+
+```apache /etc/apache2/sites-available/nuxt-app.conf
+<VirtualHost *:80>
+    ServerName example.com
+
+    ProxyPreserveHost On
+    ProxyPass / http://localhost:3000/
+    ProxyPassReverse / http://localhost:3000/
+</VirtualHost>
+```
+
+## Performance Optimization
+
+<AccordionGroup>
+  <Accordion title="Enable compression">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      nitro: {
+        compressPublicAssets: true,
+      },
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Configure caching">
+    ```ts nuxt.config.ts
+    export default defineNuxtConfig({
+      routeRules: {
+        '/api/**': { cache: { maxAge: 60 * 60 } }, // 1 hour
+        '/static/**': { cache: { maxAge: 60 * 60 * 24 } }, // 1 day
+      },
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Database connection pooling">
+    ```ts server/utils/db.ts
+    import { createPool } from 'mysql2/promise'
+
+    export const pool = createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      connectionLimit: 10,
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Memory management">
+    Monitor memory usage and configure limits:
+    ```bash
+    NODE_OPTIONS="--max-old-space-size=4096" node .output/server/index.mjs
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port already in use">
+    Change the port using environment variables:
+    ```bash
+    NITRO_PORT=8080 node .output/server/index.mjs
+    ```
+  </Accordion>
+
+  <Accordion title="Module not found errors">
+    Ensure all dependencies are installed in production:
+    ```bash
+    npm ci --only=production
+    ```
+  </Accordion>
+
+  <Accordion title="Memory leaks">
+    Monitor with PM2:
+    ```bash
+    pm2 start ecosystem.config.cjs --max-memory-restart 1G
+    ```
+  </Accordion>
+
+  <Accordion title="Slow cold starts">
+    The Node.js preset is optimized for minimal cold start time. Consider:
+    - Reducing bundle size
+    - Using dynamic imports
+    - Implementing route-level code splitting
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Edge Deployment" icon="globe" href="/deployment/edge-deployment">
+    Deploy to edge networks for lower latency
+  </Card>
+  <Card title="Deployment Overview" icon="rocket" href="/deployment/deployment">
+    Explore other deployment options
+  </Card>
+</CardGroup>

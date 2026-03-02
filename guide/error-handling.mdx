@@ -1,0 +1,247 @@
+---
+title: Error Handling
+description: Learn how to catch and handle errors across different contexts in your Nuxt application.
+---
+
+As a full-stack framework, Nuxt handles errors that can occur in several contexts:
+
+- Errors during the Vue rendering lifecycle (SSR & CSR)
+- Server and client startup errors (SSR + CSR)
+- Errors during Nitro server lifecycle (`server/` directory)
+- Errors downloading JS chunks
+
+<Tip>
+**SSR** stands for **Server-Side Rendering** and **CSR** for **Client-Side Rendering**.
+</Tip>
+
+## Vue Errors
+
+Hook into Vue errors using `onErrorCaptured` from Vue's composition API:
+
+<CodeGroup>
+```ts plugins/error-handler.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.config.errorHandler = (error, instance, info) => {
+    // handle error, e.g. report to a service
+  }
+
+  // Also possible
+  nuxtApp.hook('vue:error', (error, instance, info) => {
+    // handle error, e.g. report to a service
+  })
+})
+```
+</CodeGroup>
+
+Nuxt provides a `vue:error` hook that will be called if errors propagate to the top level. If you're using an error reporting framework, you can provide a global handler through `vueApp.config.errorHandler` to receive all Vue errors.
+
+<Note>
+The `vue:error` hook is based on the `onErrorCaptured` lifecycle hook.
+</Note>
+
+## Startup Errors
+
+Nuxt calls the `app:error` hook if there are errors starting your Nuxt application.
+
+This includes:
+- Running Nuxt plugins
+- Processing `app:created` and `app:beforeMount` hooks
+- Rendering your Vue app to HTML (during SSR)
+- Mounting the app (on client-side) - handle this with `onErrorCaptured` or `vue:error`
+- Processing the `app:mounted` hook
+
+## Nitro Server Errors
+
+You cannot currently define a server-side handler for these errors, but you can render an error page (see the Error Page section below).
+
+## JS Chunk Loading Errors
+
+You might encounter chunk loading errors due to network connectivity failures or new deployments that invalidate old hashed JS chunk URLs. Nuxt provides built-in support by performing a hard reload when a chunk fails to load during route navigation.
+
+Change this behavior using `experimental.emitRouteChunkError`:
+
+- `false`: Disable error handling
+- `'manual'`: Handle errors yourself
+- Default: Automatic hard reload
+
+## Error Page
+
+<Note>
+When Nuxt encounters a fatal error, it will either render a JSON response (if requested with `Accept: application/json` header) or trigger a full-screen error page.
+</Note>
+
+An error may occur during the server lifecycle when:
+- Processing your Nuxt plugins
+- Rendering your Vue app into HTML
+- A server API route throws an error
+
+It can also occur on the client side when:
+- Processing your Nuxt plugins
+- Before mounting the application (`app:beforeMount` hook)
+- Mounting your app if the error wasn't handled with `onErrorCaptured` or `vue:error`
+- The Vue app is initialized and mounted in browser (`app:mounted`)
+
+### Customize the Error Page
+
+Customize the default error page by adding `~/error.vue` in your application's source directory:
+
+<CodeGroup>
+```vue error.vue
+<script setup lang="ts">
+import type { NuxtError } from '#app'
+
+const props = defineProps({
+  error: Object as () => NuxtError,
+})
+
+const handleError = () => clearError({ redirect: '/' })
+</script>
+
+<template>
+  <div>
+    <h2>{{ error?.status }}</h2>
+    <button @click="handleError">
+      Clear errors
+    </button>
+  </div>
+</template>
+```
+</CodeGroup>
+
+<Note>
+Rendering an error page is an entirely separate page load, meaning any registered middleware will run again. You can use `useError` in middleware to check if an error is being handled.
+</Note>
+
+<Info>
+For custom errors, use `onErrorCaptured` composable in a page/component setup function or `vue:error` runtime hook in a Nuxt plugin.
+</Info>
+
+### Clear Errors
+
+Call the `clearError` helper function to remove the error page and optionally redirect:
+
+<CodeGroup>
+```ts
+const handleError = () => clearError({ redirect: '/' })
+```
+</CodeGroup>
+
+<Warning>
+Check before using anything dependent on Nuxt plugins, such as `$route` or `useRouter`. If a plugin threw an error, it won't re-run until you clear the error.
+</Warning>
+
+## Error Utils
+
+### useError
+
+Returns the global Nuxt error being handled:
+
+<CodeGroup>
+```ts
+function useError (): Ref<Error | { url, status, statusText, message, description, data }>
+```
+</CodeGroup>
+
+This function returns the global Nuxt error that is being handled.
+
+### createError
+
+Create an error object with additional metadata:
+
+<CodeGroup>
+```ts
+function createError (err: string | { cause, data, message, name, stack, status, statusText, fatal }): Error
+```
+</CodeGroup>
+
+You can pass a string to be set as the error `message` or an object containing error properties.
+
+If you throw an error created with `createError`:
+- **Server-side**: It triggers a full-screen error page that you can clear with `clearError`
+- **Client-side**: It throws a non-fatal error for you to handle. Set `fatal: true` to trigger a full-screen error page
+
+<CodeGroup>
+```vue pages/movies/[slug].vue
+<script setup lang="ts">
+const route = useRoute()
+const { data } = await useFetch(`/api/movies/${route.params.slug}`)
+
+if (!data.value) {
+  throw createError({
+    status: 404,
+    statusText: 'Page Not Found',
+  })
+}
+</script>
+```
+</CodeGroup>
+
+<Tip>
+The `statusText` property is for short, HTTP-compliant status texts (e.g., "Not Found"). For detailed descriptions or multi-line messages, use the `message` property instead.
+</Tip>
+
+### showError
+
+Trigger a full-screen error page:
+
+<CodeGroup>
+```ts
+function showError (err: string | Error | { status, statusText }): Error
+```
+</CodeGroup>
+
+You can call this function at any point on client-side, or (on server-side) directly within middleware, plugins, or `setup()` functions. It triggers a full-screen error page that you can clear with `clearError`.
+
+<Note>
+We recommend using `throw createError()` instead.
+</Note>
+
+### clearError
+
+Clear the currently handled Nuxt error:
+
+<CodeGroup>
+```ts
+function clearError (options?: { redirect?: string }): Promise<void>
+```
+</CodeGroup>
+
+This function clears the currently handled Nuxt error and optionally redirects to a safe page.
+
+## Render Error in Component
+
+Use the `<NuxtErrorBoundary>` component to handle client-side errors within your app without replacing your entire site with an error page:
+
+<CodeGroup>
+```vue app/pages/index.vue
+<template>
+  <NuxtErrorBoundary @error="someErrorLogger">
+    <!-- Your content -->
+    <template #error="{ error, clearError }">
+      You can display the error locally here: {{ error }}
+      <button @click="clearError">
+        This will clear the error.
+      </button>
+    </template>
+  </NuxtErrorBoundary>
+</template>
+```
+</CodeGroup>
+
+This component:
+- Prevents errors from bubbling to the top level
+- Renders the `#error` slot instead of the default slot
+- Receives `error` as a prop in the error slot
+- Automatically clears errors when navigating to another route
+
+<Tip>
+If you navigate to another route, the error will be cleared automatically.
+</Tip>
+
+## Best Practices
+
+1. **Use error boundaries**: Wrap potentially error-prone components with `<NuxtErrorBoundary>`
+2. **Report errors**: Integrate error tracking services via `vue:error` hook
+3. **Provide fallbacks**: Always show users a way to recover from errors
+4. **Test error states**: Ensure your error pages and boundaries work correctly
+5. **Clear errors properly**: Always check plugin state before clearing errors

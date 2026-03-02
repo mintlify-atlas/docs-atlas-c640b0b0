@@ -1,0 +1,143 @@
+---
+title: Nitro Server Engine
+description: Learn about Nitro, the powerful server engine that powers Nuxt applications.
+---
+
+Nuxt is powered by Nitro, a server engine created specifically for Nuxt but now part of the UnJS ecosystem and available for other frameworks.
+
+## What is Nitro?
+
+Nitro is a modern server engine that provides the server-side functionality for Nuxt applications. It was created while building Nuxt and offers powerful features that make Nuxt applications fast, flexible, and deployable anywhere.
+
+## Key Features
+
+Nitro ships with many powerful features:
+
+- **Cross-platform support** - Node.js, browsers, service workers, and more
+- **Serverless support** - Out-of-the-box serverless compatibility
+- **API routes support** - Easy creation of server API endpoints
+- **Automatic code-splitting** - Async-loaded chunks for optimal performance
+- **Hybrid mode** - Support for static + serverless sites
+- **Hot module reloading** - Development server with HMR for rapid development
+
+## API Layer
+
+Server API endpoints and middleware are powered by Nitro, which internally uses [h3](https://github.com/h3js/h3), a minimal HTTP framework.
+
+Key features of the API layer include:
+
+- Handlers can directly return objects/arrays for automatically-handled JSON responses
+- Handlers can return promises, which will be awaited
+- Helper functions for body parsing, cookie handling, redirects, headers, and more
+
+### Creating API Routes
+
+You can create API routes in the `server/api/` directory:
+
+```ts server/api/test.ts
+export default defineEventHandler(async (event) => {
+  // Return JSON, text, HTML, or even a stream
+  return {
+    message: 'Hello from the API'
+  }
+})
+```
+
+Out-of-the-box, Nitro supports **hot module replacement** and **auto-import** like other parts of your Nuxt application.
+
+## Direct API Calls
+
+Nitro allows 'direct' calling of routes via the globally-available `$fetch` helper. This will make an API call to the server if run on the browser, but will directly call the relevant function if run on the server, **saving an additional API call**.
+
+The `$fetch` API uses [ofetch](https://github.com/unjs/ofetch), with key features including:
+
+- Automatic parsing of JSON responses (with access to raw response if needed)
+- Request body and params are automatically handled with correct `Content-Type` headers
+
+```ts
+// This automatically uses the optimal approach
+const data = await $fetch('/api/test')
+```
+
+## Typed API Routes
+
+When using API routes (or middleware), Nitro generates typings for these routes as long as you're returning a value instead of using `res.end()` to send a response.
+
+You can access these types when using `$fetch()` or `useFetch()`:
+
+```ts
+// TypeScript knows the shape of the response
+const { data } = await useFetch('/api/test')
+```
+
+This provides end-to-end type safety from your server to your client code.
+
+## Standalone Server
+
+Nitro produces a standalone server distribution that is independent of `node_modules`. This makes your server:
+
+- **Portable** - The server can run in any environment
+- **Small** - No need to ship your entire `node_modules` folder
+- **Fast** - Optimized for production performance
+
+Nuxt generates this distribution when running `nuxt build` into a `.output` directory.
+
+The output contains:
+
+- Runtime code to run your Nuxt server in any environment
+- Static files ready to be served
+- Support for experimental browser service workers
+- A native storage layer with multi-source drivers
+
+## Universal Deployment
+
+Nitro offers the ability to deploy your Nuxt app anywhere, from a bare metal server to the edge network, with a start time of just a few milliseconds.
+
+There are 15+ presets to build your Nuxt app for different cloud providers and servers, including:
+
+- Cloudflare Workers
+- Netlify Functions
+- Vercel Cloud
+- Deno
+- Bun
+- And many more
+
+This flexibility means you can:
+
+- Start with one provider and switch to another without code changes
+- Deploy to multiple providers simultaneously
+- Use the same codebase for different deployment targets
+
+## Hybrid Rendering
+
+Nitro has a powerful feature called `routeRules` that allows you to define a set of rules to customize how each route of your Nuxt app is rendered.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    // Generated at build time for SEO purpose
+    '/': { prerender: true },
+    // Cached for 1 hour
+    '/api/*': { cache: { maxAge: 60 * 60 } },
+    // Redirection to avoid 404
+    '/old-page': {
+      redirect: { to: '/new-page', statusCode: 302 },
+    },
+  },
+})
+```
+
+Some route rules are Nuxt-specific (like `ssr`, `appMiddleware`, and `noScripts`) and change the behavior when rendering pages to HTML. Others also affect client-side behavior (`appMiddleware`, `redirect`, and `prerender`).
+
+## Performance Benefits
+
+Nitro provides several performance optimizations:
+
+- **Code splitting** - Only load what's needed
+- **Tree shaking** - Remove unused code
+- **Minification** - Reduce bundle size
+- **Caching** - Built-in caching layer
+- **Compression** - Automatic response compression
+- **Edge deployment** - Render closer to users
+
+These optimizations ensure your Nuxt applications are fast and efficient in production.

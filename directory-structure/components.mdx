@@ -1,0 +1,277 @@
+---
+title: 'components/'
+description: 'The components/ directory is where you put all your Vue components.'
+---
+
+Nuxt automatically imports any components in this directory (along with components that are registered by any modules you may be using).
+
+```bash
+components/
+  AppHeader.vue
+  AppFooter.vue
+```
+
+```html app/app.vue
+<template>
+  <div>
+    <AppHeader />
+    <NuxtPage />
+    <AppFooter />
+  </div>
+</template>
+```
+
+## Component Names
+
+If you have a component in nested directories such as:
+
+```bash
+components/
+  base/
+    foo/
+      Button.vue
+```
+
+... then the component's name will be based on its own path directory and filename, with duplicate segments being removed. Therefore, the component's name will be:
+
+```html
+<BaseFooButton />
+```
+
+<Note>
+For clarity, we recommend that the component's filename matches its name. So, in the example above, you could rename `Button.vue` to be `BaseFooButton.vue`.
+</Note>
+
+If you want to auto-import components based only on its name, not path, then you need to set `pathPrefix` option to `false` using extended form of the configuration object:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+  ],
+})
+```
+
+This registers the components using the same strategy as used in Nuxt 2. For example, `~/components/Some/MyComponent.vue` will be usable as `<MyComponent>` and not `<SomeMyComponent>`.
+
+## Dynamic Components
+
+If you want to use the Vue `<component :is="someComputedComponent">` syntax, you need to use the `resolveComponent` helper provided by Vue or import the component directly from `#components` and pass it into `is` prop.
+
+For example:
+
+```vue app/pages/index.vue
+<script setup lang="ts">
+import { SomeComponent } from '#components'
+
+const MyButton = resolveComponent('MyButton')
+</script>
+
+<template>
+  <component :is="clickable ? MyButton : 'div'" />
+  <component :is="SomeComponent" />
+</template>
+```
+
+<Info>
+If you are using `resolveComponent` to handle dynamic components, make sure not to insert anything but the name of the component, which must be a literal string and not be or contain a variable. The string is statically analyzed at the compilation step.
+</Info>
+
+## Dynamic Imports
+
+To dynamically import a component (also known as lazy-loading a component) all you need to do is add the `Lazy` prefix to the component's name. This is particularly useful if the component is not always needed.
+
+By using the `Lazy` prefix you can delay loading the component code until the right moment, which can be helpful for optimizing your JavaScript bundle size.
+
+```vue app/pages/index.vue
+<script setup lang="ts">
+const show = ref(false)
+</script>
+
+<template>
+  <div>
+    <h1>Mountains</h1>
+    <LazyMountainsList v-if="show" />
+    <button
+      v-if="!show"
+      @click="show = true"
+    >
+      Show List
+    </button>
+  </div>
+</template>
+```
+
+## Delayed Hydration
+
+Lazy components are great for controlling the chunk sizes in your app, but they don't always enhance runtime performance, as they still load eagerly unless conditionally rendered. In real-world applications, some pages may include a lot of content and a lot of components, and most of the time not all of them need to be interactive as soon as the page is loaded.
+
+In order to optimize your app, you may want to delay the hydration of some components until they're visible, or until the browser is done with more important tasks.
+
+Nuxt supports this using lazy (or delayed) hydration, allowing you to control when components become interactive.
+
+### Hydration Strategies
+
+Nuxt provides a range of built-in hydration strategies. Only one strategy can be used per lazy component.
+
+<Note>
+Any prop change on a lazily hydrated component will trigger hydration immediately. (e.g., changing a prop on a component with `hydrate-never` will cause it to hydrate)
+</Note>
+
+#### `hydrate-on-visible`
+
+Hydrates the component when it becomes visible in the viewport.
+
+```vue app/pages/index.vue
+<template>
+  <div>
+    <LazyMyComponent hydrate-on-visible />
+  </div>
+</template>
+```
+
+<Note>
+Under the hood, this uses Vue's built-in [`hydrateOnVisible` strategy](https://vuejs.org/guide/components/async#hydrate-on-visible).
+</Note>
+
+#### `hydrate-on-idle`
+
+Hydrates the component when the browser is idle. This is suitable if you need the component to load as soon as possible, but not block the critical rendering path.
+
+```vue app/pages/index.vue
+<template>
+  <div>
+    <LazyMyComponent hydrate-on-idle />
+  </div>
+</template>
+```
+
+#### `hydrate-on-interaction`
+
+Hydrates the component after a specified interaction (e.g., click, mouseover).
+
+```vue app/pages/index.vue
+<template>
+  <div>
+    <LazyMyComponent hydrate-on-interaction="mouseover" />
+  </div>
+</template>
+```
+
+If you do not pass an event or list of events, it defaults to hydrating on `pointerenter`, `click` and `focus`.
+
+## Client Components
+
+If a component is meant to be rendered only client-side, you can add the `.client` suffix to your component.
+
+```bash
+components/
+  Comments.client.vue
+```
+
+```vue app/pages/example.vue
+<template>
+  <div>
+    <!-- this component will only be rendered on client side -->
+    <Comments />
+  </div>
+</template>
+```
+
+<Note>
+This feature only works with Nuxt auto-imports and `#components` imports. Explicitly importing these components from their real paths does not convert them into client-only components.
+</Note>
+
+<Info>
+`.client` components are rendered only after being mounted. To access the rendered template using `onMounted()`, add `await nextTick()` in the callback of the `onMounted()` hook.
+</Info>
+
+## Server Components
+
+Server components allow server-rendering individual components within your client-side apps. It's possible to use server components within Nuxt, even if you are generating a static site. That makes it possible to build complex sites that mix dynamic components, server-rendered HTML and even static chunks of markup.
+
+Server components can either be used on their own or paired with a [client component](#paired-with-a-client-component).
+
+### Standalone server components
+
+Standalone server components will always be rendered on the server, also known as Islands components.
+
+When their props update, this will result in a network request that will update the rendered HTML in-place.
+
+Server components are currently experimental and in order to use them, you need to enable the 'component islands' feature in your nuxt.config:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  experimental: {
+    componentIslands: true,
+  },
+})
+```
+
+Now you can register server-only components with the `.server` suffix and use them anywhere in your application automatically.
+
+```bash
+components/
+  HighlightedMarkdown.server.vue
+```
+
+```vue app/pages/example.vue
+<template>
+  <div>
+    <!--
+      this will automatically be rendered on the server, meaning your markdown parsing + highlighting
+      libraries are not included in your client bundle.
+     -->
+    <HighlightedMarkdown markdown="# Headline" />
+  </div>
+</template>
+```
+
+<Warning>
+Server components (and islands) must have a single root element. (HTML comments are considered elements as well.)
+</Warning>
+
+### Paired with a Client component
+
+In this case, the `.server` + `.client` components are two 'halves' of a component and can be used in advanced use cases for separate implementations of a component on server and client side.
+
+```bash
+components/
+  Comments.client.vue
+  Comments.server.vue
+```
+
+```vue app/pages/example.vue
+<template>
+  <div>
+    <!-- this component will render Comments.server on the server then Comments.client once mounted in the browser -->
+    <Comments />
+  </div>
+</template>
+```
+
+## Custom Directories
+
+By default, only the `~/components` directory is scanned. If you want to add other directories, or change how the components are scanned within a subfolder of this directory, you can add additional directories to the configuration:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  components: [
+    // ~/calendar-module/components/event/Update.vue => <EventUpdate />
+    { path: '~/calendar-module/components' },
+
+    // ~/user-module/components/account/UserDeleteDialog.vue => <UserDeleteDialog />
+    { path: '~/user-module/components', pathPrefix: false },
+
+    // ~/components/special-components/Btn.vue => <SpecialBtn />
+    { path: '~/components/special-components', prefix: 'Special' },
+
+    // It's important that this comes last if you have overrides you wish to apply
+    // to sub-directories of `~/components`.
+    '~/components',
+  ],
+})
+```

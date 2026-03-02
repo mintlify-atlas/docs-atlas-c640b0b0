@@ -1,0 +1,149 @@
+---
+title: Plugins
+description: Plugin utilities to add plugins or plugin templates
+---
+
+# Plugins
+
+Nuxt Kit provides a set of utilities to help you create and use plugins. You can add plugins or plugin templates to your module using these functions.
+
+Plugins are self-contained code that usually add app-level functionality to Vue. In Nuxt, plugins are automatically imported from the `app/plugins/` directory.
+
+## `addPlugin`
+
+Registers a Nuxt plugin and adds it to the plugins array.
+
+### Type
+
+```ts
+function addPlugin(plugin: NuxtPlugin | string, options?: AddPluginOptions): NuxtPlugin
+```
+
+### Parameters
+
+**`plugin`**: A plugin object or a string with the path to the plugin. If a string is provided, it will be converted to a plugin object with `src` set to the string value.
+
+If a plugin object is provided, it must have the following properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `src` | `string` | `true` | Path to the plugin file. |
+| `mode` | `'all' \| 'server' \| 'client'` | `false` | If set to `'all'`, plugin included in both bundles. If `'server'`, server bundle only. If `'client'`, client bundle only. You can also use `.client` and `.server` modifiers in `src`. |
+| `order` | `number` | `false` | Order of the plugin. Lower numbers run first. User plugins default to `0`. Set between `-20` (pre-plugins) and `20` (post-plugins). |
+
+**Warning:** Avoid using `order` unless necessary. Use `append` if you simply need to register plugins after Nuxt defaults.
+
+**`options`**: Optional object:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `append` | `boolean` | `false` | If `true`, the plugin will be appended to the plugins array. Defaults to `false` (prepended). |
+
+### Usage
+
+```ts
+import { addPlugin, createResolver, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup() {
+    const { resolve } = createResolver(import.meta.url)
+
+    addPlugin({
+      src: resolve('runtime/plugin.js'),
+      mode: 'client',
+    })
+  },
+})
+```
+
+## `addPluginTemplate`
+
+Adds a template and registers as a nuxt plugin. This is useful for plugins that need to generate code at build time.
+
+### Type
+
+```ts
+function addPluginTemplate(
+  pluginOptions: NuxtPluginTemplate,
+  options?: AddPluginOptions
+): NuxtPlugin
+```
+
+### Parameters
+
+**`pluginOptions`**: A plugin template object:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `src` | `string` | `false` | Path to the template. If `src` is not provided, `getContents` must be provided instead. |
+| `filename` | `string` | `false` | Filename of the template. If not provided, generated from the `src` path. |
+| `dst` | `string` | `false` | Path to the destination file. If not provided, generated from the `filename` and `buildDir`. |
+| `mode` | `'all' \| 'server' \| 'client'` | `false` | Plugin mode (same as `addPlugin`). |
+| `options` | `Record<string, any>` | `false` | Options to pass to the template. |
+| `getContents` | `(data: Record<string, any>) => string \| Promise<string>` | `false` | Function that returns template contents. If `src` is provided, this is ignored. |
+| `write` | `boolean` | `false` | If `true`, the template will be written to disk. Otherwise, used only in virtual filesystem. |
+| `order` | `number` | `false` | Order of the plugin (same as `addPlugin`). |
+
+**Warning:** Prefer using `getContents` for dynamic plugin generation. Avoid setting `order` unless necessary.
+
+**`options`**: Optional object (same as `addPlugin`).
+
+### Usage
+
+```ts
+import { addPluginTemplate, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup(options) {
+    addPluginTemplate({
+      filename: 'module-plugin.mjs',
+      getContents: () => `
+import { defineNuxtPlugin } from '#app/nuxt'
+
+export default defineNuxtPlugin({
+  name: 'module-plugin',
+  setup(nuxtApp) {
+    ${options.log ? 'console.log("Plugin install")' : ''}
+  }
+})
+      `,
+    })
+  },
+})
+```
+
+## Generate plugin with different options
+
+Use `addPluginTemplate` when you need to generate plugin code dynamically at build time. This allows you to generate different plugin contents based on the options passed to it.
+
+```ts
+import { addPluginTemplate, defineNuxtModule } from '@nuxt/kit'
+
+export default defineNuxtModule({
+  setup(_, nuxt) {
+    if (nuxt.options.vue.config && Object.values(nuxt.options.vue.config).some(v => v !== null && v !== undefined)) {
+      addPluginTemplate({
+        filename: 'vue-app-config.mjs',
+        write: true,
+        getContents: () => `
+import { defineNuxtPlugin } from '#app/nuxt'
+
+export default defineNuxtPlugin({
+  name: 'nuxt:vue-app-config',
+  enforce: 'pre',
+  setup(nuxtApp) {
+    ${Object.keys(nuxt.options.vue.config!)
+      .map(k => `nuxtApp.vueApp.config[${JSON.stringify(k)}] = ${JSON.stringify(nuxt.options.vue.config![k as 'idPrefix'])}`)
+      .join('\n')}
+  }
+})
+        `,
+      })
+    }
+  },
+})
+```
+
+## Source
+
+[View source on GitHub](https://github.com/nuxt/nuxt/blob/main/packages/kit/src/plugin.ts)

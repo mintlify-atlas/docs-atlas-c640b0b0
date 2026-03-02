@@ -1,0 +1,144 @@
+---
+title: Server-Side Rendering
+description: Learn about Nuxt's rendering modes including universal rendering, client-side rendering, and hybrid rendering.
+---
+
+Nuxt supports different rendering modes: universal rendering, client-side rendering, and hybrid rendering. Understanding these modes is crucial for optimizing your application's performance and user experience.
+
+## Universal Rendering
+
+By default, Nuxt uses **universal rendering** to provide better user experience, performance, and to optimize search engine indexing. This is similar to traditional server-side rendering performed by PHP or Ruby applications.
+
+When the browser requests a URL with universal rendering enabled, Nuxt runs the JavaScript (Vue.js) code in a server environment and returns a fully rendered HTML page to the browser. Users immediately get the entirety of the initial content of the application.
+
+Once the HTML document has been downloaded, the browser interprets it and Vue.js takes control of the document. The same JavaScript code that ran on the server runs on the client **again** in the background, enabling interactivity by binding its listeners to the HTML. This process is called **Hydration**.
+
+### What Runs Where?
+
+It's important to understand which parts of a Vue file run on the server and/or the client in universal rendering mode.
+
+```vue app/app.vue
+<script setup lang="ts">
+const counter = ref(0) // executes in server and client environments
+
+const handleClick = () => {
+  counter.value++ // executes only in a client environment
+}
+</script>
+
+<template>
+  <div>
+    <p>Count: {{ counter }}</p>
+    <button @click="handleClick">
+      Increment
+    </button>
+  </div>
+</template>
+```
+
+On the initial request, the `counter` ref is initialized on the server since it's rendered inside the `<p>` tag. The contents of `handleClick` are never executed on the server. During hydration in the browser, the `counter` ref is re-initialized, and `handleClick` binds itself to the button.
+
+### Benefits
+
+- **Performance** - Users get immediate access to the page's content because browsers can display static content much faster than JavaScript-generated content
+- **Search Engine Optimization** - Universal rendering delivers the entire HTML content of the page to the browser. Web crawlers can directly index the page's content
+- **User Experience** - Content is immediately visible while preserving the interactivity of a web application
+
+### Trade-offs
+
+- **Development constraints** - Server and browser environments don't provide the same APIs. You need to write code that can run on both sides seamlessly
+- **Cost** - A server needs to be running to render pages on the fly. However, server calls are highly reduced thanks to client-side navigation
+
+Universal rendering is ideal for content-oriented websites: blogs, marketing websites, portfolios, e-commerce sites, and marketplaces.
+
+## Client-Side Rendering
+
+With client-side rendering, a traditional Vue.js application is rendered in the browser (or **client**). Vue.js generates HTML elements after the browser downloads and parses all the JavaScript code.
+
+### Benefits
+
+- **Development speed** - You don't have to worry about server compatibility of the code
+- **Cheaper** - Running a server adds infrastructure costs. You can host client-only applications on any static server
+- **Offline** - Code entirely runs in the browser, so it can work while the internet is unavailable
+
+### Trade-offs
+
+- **Performance** - Users have to wait for the browser to download, parse, and run JavaScript files
+- **Search Engine Optimization** - Indexing and updating content delivered via client-side rendering takes more time than with server-rendered HTML
+
+Client-side rendering is a good choice for heavily interactive web applications that don't need indexing or whose users visit frequently: SaaS, back-office applications, or online games.
+
+You can enable client-side only rendering in your `nuxt.config.ts`:
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  ssr: false,
+})
+```
+
+<Note>
+  If you use `ssr: false`, you should also place an HTML file in `~/spa-loading-template.html` with some HTML to render a loading screen until your app is hydrated.
+</Note>
+
+## Hybrid Rendering
+
+Hybrid rendering allows different caching rules per route using **Route Rules** and decides how the server should respond to a new request on a given URL.
+
+Previously, every route/page of a Nuxt application had to use the same rendering mode. With hybrid rendering, you can define rules for groups of routes, changing rendering modes or assigning cache strategies based on route patterns.
+
+```ts nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    // Homepage pre-rendered at build time
+    '/': { prerender: true },
+    // Products page generated on demand, revalidates in background
+    '/products': { swr: true },
+    // Product pages cached for 1 hour
+    '/products/**': { swr: 3600 },
+    // Blog posts cached on CDN for 1 hour
+    '/blog': { isr: 3600 },
+    // Admin dashboard renders only on client-side
+    '/admin/**': { ssr: false },
+    // Add cors headers on API routes
+    '/api/**': { cors: true },
+    // Redirects legacy urls
+    '/old-page': { redirect: '/new-page' },
+  },
+})
+```
+
+### Route Rules Options
+
+- `redirect` - Define server-side redirects
+- `ssr` - Disable server-side rendering for sections of your app and make them render only in the browser
+- `cors` - Automatically add CORS headers
+- `headers` - Add specific headers to sections of your site
+- `swr` - Add cache headers to the server response and cache it for a configurable TTL
+- `isr` - Similar to `swr` but able to add the response to the CDN cache on platforms that support it
+- `prerender` - Prerender routes at build time and include them as static assets
+- `noScripts` - Disable rendering of Nuxt scripts and JS resource hints
+- `appMiddleware` - Define middleware that should or should not run for page paths
+
+<Note>
+  Routes using `isr` or `swr` also generate `_payload.json` files alongside HTML. Client-side navigation loads these cached payloads instead of re-fetching data.
+</Note>
+
+Whenever possible, route rules are automatically applied to the deployment platform's native rules for optimal performance (Netlify and Vercel are currently supported).
+
+## Edge-Side Rendering
+
+Edge-Side Rendering (ESR) allows rendering of your Nuxt application closer to your users via edge servers of a Content Delivery Network (CDN). This ensures improved performance and reduced latency.
+
+With ESR, the rendering process is pushed to the 'edge' of the network - the CDN's edge servers. When a request for a page is made, instead of going to the original server, it's intercepted by the nearest edge server. This server generates the HTML and sends it back to the user, minimizing latency.
+
+Edge-side rendering is possible thanks to Nitro, the server engine that powers Nuxt. It offers cross-platform support for Node.js, Deno, Cloudflare Workers, and more.
+
+Current platforms supporting ESR:
+
+- Cloudflare Pages with zero configuration
+- Vercel Cloud with `NITRO_PRESET=vercel-edge`
+- Netlify Edge Functions with `NITRO_PRESET=netlify-edge`
+
+<Note>
+  Hybrid rendering can be used when using Edge-Side Rendering with route rules.
+</Note>

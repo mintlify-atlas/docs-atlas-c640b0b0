@@ -1,0 +1,185 @@
+---
+title: State Management
+description: Learn how to manage state in Nuxt using useState composable and third-party libraries like Pinia.
+---
+
+Nuxt provides the `useState` composable to create a reactive and SSR-friendly shared state across components.
+
+## Understanding useState
+
+`useState` is an SSR-friendly `ref` replacement. Its value will be preserved after server-side rendering (during client-side hydration) and shared across all components using a unique key.
+
+<Warning>
+  Because the data inside `useState` will be serialized to JSON, it's important that it does not contain anything that cannot be serialized, such as classes, functions, or symbols.
+</Warning>
+
+## Best Practices
+
+<Warning>
+  Never define `const state = ref()` outside of `<script setup>` or `setup()` function. For example, doing `export myState = ref({})` would result in state shared across requests on the server and can lead to memory leaks.
+</Warning>
+
+<Tip>
+  Instead use `const useX = () => useState('x')`
+</Tip>
+
+## Basic Usage
+
+In this example, we use a component-local counter state. Any other component that uses `useState('counter')` shares the same reactive state.
+
+```vue app/app.vue
+<script setup lang="ts">
+const counter = useState('counter', () => Math.round(Math.random() * 1000))
+</script>
+
+<template>
+  <div>
+    Counter: {{ counter }}
+    <button @click="counter++">
+      +
+    </button>
+    <button @click="counter--">
+      -
+    </button>
+  </div>
+</template>
+```
+
+<Note>
+  To globally invalidate cached state, see the `clearNuxtState` utility.
+</Note>
+
+## Initializing State
+
+Most of the time, you'll want to initialize your state with data that resolves asynchronously. You can use the `app.vue` component with the `callOnce` utility to do so.
+
+```vue app/app.vue
+<script setup lang="ts">
+const websiteConfig = useState('config')
+
+await callOnce(async () => {
+  websiteConfig.value = await $fetch('https://my-cms.com/api/website-config')
+})
+</script>
+```
+
+<Tip>
+  This is similar to the `nuxtServerInit` action in Nuxt 2, which allows filling the initial state of your store server-side before rendering the page.
+</Tip>
+
+## Shared State Pattern
+
+By using auto-imported composables, you can define global type-safe states and import them across the app.
+
+```ts composables/states.ts
+export const useColor = () => useState<string>('color', () => 'pink')
+```
+
+```vue app/app.vue
+<script setup lang="ts">
+const color = useColor() // Same as useState('color')
+</script>
+
+<template>
+  <p>Current color: {{ color }}</p>
+</template>
+```
+
+This pattern allows you to create reusable state management composables that can be shared across your entire application.
+
+## Advanced Usage
+
+You can create more complex state management patterns by combining `useState` with other composables and Vue features.
+
+```ts app/composables/locale.ts
+import type { Ref } from 'vue'
+
+export const useLocale = () => {
+  return useState<string>('locale', () => useDefaultLocale().value)
+}
+
+export const useDefaultLocale = (fallback = 'en-US') => {
+  const locale = ref(fallback)
+  if (import.meta.server) {
+    const reqLocale = useRequestHeaders()['accept-language']?.split(',')[0]
+    if (reqLocale) {
+      locale.value = reqLocale
+    }
+  } else if (import.meta.client) {
+    const navLang = navigator.language
+    if (navLang) {
+      locale.value = navLang
+    }
+  }
+  return locale
+}
+
+export const useLocales = () => {
+  const locale = useLocale()
+  const locales = ref([
+    'en-US',
+    'en-GB',
+    'ja-JP-u-ca-japanese',
+  ])
+  if (!locales.value.includes(locale.value)) {
+    locales.value.unshift(locale.value)
+  }
+  return locales
+}
+
+export const useLocaleDate = (date: Ref<Date> | Date, locale = useLocale()) => {
+  return computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: 'full' }).format(unref(date)))
+}
+```
+
+## Using Pinia
+
+For more complex state management needs, you can leverage the Pinia module to create a global store and use it across the app.
+
+<Note>
+  Make sure to install the Pinia module with `npx nuxt module add pinia`.
+</Note>
+
+<CodeGroup>
+```ts app/stores/website.ts
+export const useWebsiteStore = defineStore('websiteStore', {
+  state: () => ({
+    name: '',
+    description: '',
+  }),
+  actions: {
+    async fetch () {
+      const infos = await $fetch('https://api.nuxt.com/modules/pinia')
+
+      this.name = infos.name
+      this.description = infos.description
+    },
+  },
+})
+```
+
+```vue app/app.vue
+<script setup lang="ts">
+const website = useWebsiteStore()
+
+await callOnce(website.fetch)
+</script>
+
+<template>
+  <main>
+    <h1>{{ website.name }}</h1>
+    <p>{{ website.description }}</p>
+  </main>
+</template>
+```
+</CodeGroup>
+
+## Third-Party Libraries
+
+Nuxt is not opinionated about state management, so feel free to choose the right solution for your needs. Popular integrations include:
+
+- **Pinia** - The official Vue recommendation
+- **Harlem** - Immutable global state management
+- **XState** - State machine approach with tools for visualizing and testing your state logic
+
+These libraries provide additional features like DevTools integration, module systems, and advanced state management patterns.
